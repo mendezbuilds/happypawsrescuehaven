@@ -184,7 +184,7 @@ export const Contact: React.FC = () => {
                 </p>
                 <Button 
                   onClick={() => setSubmitSuccess(false)}
-                  variant="outline"
+                  variant="secondary"
                   className="rounded-full px-6 py-2.5 text-xs font-semibold"
                 >
                   Send Another Message

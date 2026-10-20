@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Container from '../../components/ui/Container';
 import Button from '../../components/ui/Button';
-import Card from '../../components/ui/Card';
 import { 
   Heart, 
   Coins, 
@@ -16,9 +15,7 @@ import {
   Sparkles,
   ArrowRight,
   CheckCircle2,
-  Calendar,
-  MapPin,
-  Clock
+  MapPin
 } from 'lucide-react';
 import supabase from '../../lib/supabase';
 

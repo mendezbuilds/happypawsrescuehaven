@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import supabase from '../../lib/supabase';
 import Container from '../../components/ui/Container';
-import { Search, AlertTriangle, Loader2, Footprints, Package, ArrowRight, ShieldCheck, MapPin, Calendar, Clock } from 'lucide-react';
+import { Search, AlertTriangle, Loader2, Footprints, Package, ArrowRight, ShieldCheck, MapPin, Clock } from 'lucide-react';
 import type { ShipmentStatusUpdate } from '../../lib/types';
 
 export const Transport: React.FC = () => {

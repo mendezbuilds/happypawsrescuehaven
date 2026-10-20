@@ -8,7 +8,7 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
 import Textarea from '../../components/ui/Textarea';
-import { ArrowLeft, CheckCircle2, AlertTriangle, Loader2, Upload, FileText, ShieldCheck, Sparkles, Heart } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, AlertTriangle, Loader2, Upload, FileText, ShieldCheck, Sparkles } from 'lucide-react';
 
 // Zod Validation Schema
 const schema = z.object({

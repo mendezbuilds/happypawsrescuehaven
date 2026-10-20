@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { PawPrint, Heart, ShieldCheck, Mail, ArrowRight } from 'lucide-react';
+import { PawPrint, Heart, ShieldCheck, ArrowRight } from 'lucide-react';
 
 /**
  * Shared Page footer containing site descriptions, quick links, and system indicators.

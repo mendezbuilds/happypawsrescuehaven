@@ -10,7 +10,6 @@ import {
   DollarSign, 
   Check, 
   ShieldAlert,
-  Calendar,
   Heart,
   Baby,
   Users,
@@ -18,7 +17,6 @@ import {
   ShieldCheck,
   Sparkles,
   ArrowRight,
-  Info,
   Clock,
   FileCheck
 } from 'lucide-react';
