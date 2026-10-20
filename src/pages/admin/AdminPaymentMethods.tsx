@@ -28,6 +28,10 @@ export const AdminPaymentMethods: React.FC = () => {
   const [securityDepositAmount, setSecurityDepositAmount] = useState('100.00');
   const [updatingSettings, setUpdatingSettings] = useState(false);
 
+  // Adopted Stats State
+  const [totalAnimalsAdopted, setTotalAnimalsAdopted] = useState('2300');
+  const [updatingStatsSettings, setUpdatingStatsSettings] = useState(false);
+
   // Public Contact Info Settings State
   const [contactPhone, setContactPhone] = useState('+1 (XXX) XXX-XXXX');
   const [contactEmail, setContactEmail] = useState('support@happypawsrescuehaven.com');
@@ -110,13 +114,15 @@ export const AdminPaymentMethods: React.FC = () => {
           'social_x',
           'tawkto_property_id',
           'tawkto_widget_id',
-          'tawkto_enabled'
+          'tawkto_enabled',
+          'total_animals_adopted'
         ]);
 
       if (settingsError) throw settingsError;
       if (settingsData) {
         settingsData.forEach((row: any) => {
           if (row.key === 'security_deposit_amount') setSecurityDepositAmount(row.value);
+          if (row.key === 'total_animals_adopted') setTotalAnimalsAdopted(row.value);
           if (row.key === 'contact_phone') setContactPhone(row.value);
           if (row.key === 'contact_email') setContactEmail(row.value);
           if (row.key === 'contact_address') setContactAddress(row.value);
@@ -468,6 +474,40 @@ export const AdminPaymentMethods: React.FC = () => {
     }
   };
 
+  const handleUpdateStatsSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const count = parseInt(totalAnimalsAdopted, 10);
+    if (isNaN(count) || count < 0) {
+      setNotification({
+        message: 'Please enter a valid count of adopted animals.',
+        type: 'error'
+      });
+      return;
+    }
+
+    try {
+      setUpdatingStatsSettings(true);
+      const { error: settingsError } = await supabase
+        .from('app_settings')
+        .upsert([{ key: 'total_animals_adopted', value: count.toString() }]);
+
+      if (settingsError) throw settingsError;
+
+      setNotification({
+        message: 'Adopted Pet Count updated successfully.',
+        type: 'success'
+      });
+    } catch (err: any) {
+      console.error('Error updating stats settings:', err);
+      setNotification({
+        message: `Failed to update stats: ${err.message}`,
+        type: 'error'
+      });
+    } finally {
+      setUpdatingStatsSettings(false);
+    }
+  };
+
   const handleUpdateContactSettings = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!contactPhone.trim() || !contactEmail.trim() || !contactAddress.trim()) {
@@ -775,6 +815,44 @@ export const AdminPaymentMethods: React.FC = () => {
           </p>
         </div>
 
+        {/* Setting Panel: Homepage Stats Settings */}
+        <div className="bg-hprh-paper-dark border border-hprh-pine/15 rounded-lg p-6 space-y-4 shadow-sm relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1 bg-hprh-sage"></div>
+          <div className="flex items-center gap-2 border-b border-hprh-pine/10 pb-3">
+            <Settings className="w-5 h-5 text-hprh-sage" />
+            <h2 className="font-display text-lg font-bold text-hprh-pine">
+              Homepage Stats Settings
+            </h2>
+          </div>
+          
+          <form onSubmit={handleUpdateStatsSettings} className="flex flex-col sm:flex-row sm:items-end gap-4 max-w-md">
+            <div className="flex-grow">
+              <Input
+                label="Total Animals Adopted (Historical + Live) *"
+                type="number"
+                min="0"
+                value={totalAnimalsAdopted}
+                onChange={(e) => setTotalAnimalsAdopted(e.target.value)}
+                placeholder="e.g. 2300"
+                required
+              />
+            </div>
+            
+            <Button
+              type="submit"
+              disabled={updatingStatsSettings}
+              variant="secondary"
+              className="w-full sm:w-auto"
+            >
+              {updatingStatsSettings ? 'Updating...' : 'Save Stat'}
+            </Button>
+          </form>
+          
+          <p className="text-[10px] text-hprh-pine/45 italic">
+            * This count is displayed on the homepage stats strip to represent the rescue's real historical adoption count.
+          </p>
+        </div>
+
         {/* Setting Panel: Public Contact Information Settings */}
         <div className="bg-hprh-paper-dark border border-hprh-pine/15 rounded-lg p-6 space-y-4 shadow-sm relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-1 bg-hprh-sage"></div>
@@ -989,7 +1067,7 @@ export const AdminPaymentMethods: React.FC = () => {
 
               <Input
                 label="Account Holder Name *"
-                placeholder="e.g. Happy Paws Rescue Haven Inc."
+                placeholder="e.g. Rescue4paws Inc."
                 value={accountName}
                 onChange={(e) => setAccountName(e.target.value)}
                 required

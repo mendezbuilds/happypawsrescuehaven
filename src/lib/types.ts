@@ -1,5 +1,5 @@
 // ========================================================
-// HAPPY PAWS RESCUE HAVEN TYPESCRIPT TYPE DEFINITIONS
+// RESCUE4PAWS TYPESCRIPT TYPE DEFINITIONS
 // ========================================================
 
 export type PetStatus = 'AVAILABLE' | 'PENDING' | 'ADOPTED' | 'MEDICAL_HOLD' | 'NOT_LISTED' | 'IN_FOSTER';

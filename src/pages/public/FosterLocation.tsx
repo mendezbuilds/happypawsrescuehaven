@@ -16,7 +16,9 @@ import {
   User,
   Truck,
   Heart,
-  FileSignature
+  FileSignature,
+  Building2,
+  Shield
 } from 'lucide-react';
 import type { TransportRequest, BankAccount } from '../../lib/types';
 
@@ -69,6 +71,9 @@ export const FosterLocation: React.FC = () => {
 
   // Timeline updates
   const [trackingUpdates, setTrackingUpdates] = useState<any[]>([]);
+
+  // Dynamic Deposit Setting
+  const [depositAmount, setDepositAmount] = useState<number>(100.00);
 
   useEffect(() => {
     return () => {
@@ -131,6 +136,17 @@ export const FosterLocation: React.FC = () => {
       setPaymentMethods(methodsData || []);
       if (methodsData && methodsData.length > 0) {
         setSelectedMethodId(methodsData[0].id);
+      }
+
+      // 3. Fetch security deposit settings
+      const { data: settingsData, error: settingsErr } = await supabase
+        .from('app_settings')
+        .select('value')
+        .eq('key', 'security_deposit_amount')
+        .maybeSingle();
+
+      if (!settingsErr && settingsData?.value) {
+        setDepositAmount(parseFloat(settingsData.value));
       }
 
     } catch (err: any) {
@@ -346,7 +362,7 @@ export const FosterLocation: React.FC = () => {
       if (uploadError) throw uploadError;
 
       // 2. Insert payment proof & update parent statuses via secure RPC
-      const claimVal = parseFloat(amountClaimed) || 0;
+      const claimVal = purpose === 'SECURITY_DEPOSIT' ? depositAmount : (parseFloat(amountClaimed) || 0);
       const { error: rpcErr } = await supabase.rpc('submit_foster_payment_proof', {
         assignment_id: assignmentId,
         bank_account_id: selectedMethodId,
@@ -429,20 +445,36 @@ export const FosterLocation: React.FC = () => {
 
   // Determine current active step
   let activeStep = 1;
-  if (assignment.status === 'SELF_PICKUP') {
+  if (assignment.status === 'ASSIGNED') {
     activeStep = 0;
-  } else if (status === 'AWAITING_LOCATION' || status === 'AWAITING_CHOICE') {
-    activeStep = 1;
-  } else if (status === 'DEPOSIT_PENDING') {
-    if (assignment.deposit_terms_agreed === false) {
-      activeStep = 2;
-    } else {
-      activeStep = 3;
+  } else if (assignment.status === 'SELF_PICKUP') {
+    if (status === 'SELF_PICKUP_CONFIRMED') {
+      activeStep = 0;
+    } else if (status === 'DEPOSIT_PENDING') {
+      if (assignment.deposit_terms_agreed === false) {
+        activeStep = 3;
+      } else {
+        activeStep = 4;
+      }
+    } else if (status === 'DEPOSIT_PROOF_SUBMITTED') {
+      activeStep = 4;
     }
-  } else if (status === 'DEPOSIT_PROOF_SUBMITTED') {
-    activeStep = 3;
-  } else if (status === 'DEPOSIT_PAID' || status === 'TRACKING_ACTIVE' || status === 'DELIVERED' || status === 'CANCELLED') {
-    activeStep = 4;
+  } else {
+    if (status === 'AWAITING_LOCATION' || status === 'AWAITING_CHOICE') {
+      activeStep = 1;
+    } else if (status === 'QUOTE_GENERATED' || status === 'TRANSPORT_FEE_PENDING') {
+      activeStep = 2;
+    } else if (status === 'DEPOSIT_PENDING') {
+      if (assignment.deposit_terms_agreed === false) {
+        activeStep = 3;
+      } else {
+        activeStep = 4;
+      }
+    } else if (status === 'DEPOSIT_PROOF_SUBMITTED') {
+      activeStep = 4;
+    } else if (status === 'DEPOSIT_PAID' || status === 'TRACKING_ACTIVE' || status === 'DELIVERED' || status === 'CANCELLED') {
+      activeStep = 5;
+    }
   }
 
   return (
@@ -471,27 +503,44 @@ export const FosterLocation: React.FC = () => {
             <span className="font-mono text-[9px] uppercase tracking-widest text-hprh-clay font-bold block">Foster Passenger</span>
             <h3 className="font-display text-xl font-bold text-hprh-pine">{pet?.name}</h3>
             <p className="text-xs text-hprh-clay">
-              Fostered by: <span className="font-semibold text-hprh-pine">{assignment?.full_name}</span> • Origin: {pet?.current_location || 'HPRH Rescue Hub'}
+              Fostered by: <span className="font-semibold text-hprh-pine">{assignment?.full_name}</span> • Origin: {pet?.current_location || 'Rescue4paws Hub'}
             </p>
           </div>
         </div>
 
         {/* Stepper Indicator */}
-        {assignment.status !== 'SELF_PICKUP' && assignment.deposit_required !== false && (
-          <div className="grid grid-cols-4 gap-2 text-center text-[10px] font-mono font-bold uppercase tracking-wider text-hprh-clay select-none">
-            <div className={`pb-2 border-b-2 transition-colors ${activeStep >= 1 ? 'border-hprh-sage text-hprh-pine' : 'border-hprh-sage/10'}`}>
-              1. Location
+        {assignment.status !== 'ASSIGNED' && assignment.status !== 'SELF_PICKUP' && (
+          assignment.deposit_required === false ? (
+            <div className="grid grid-cols-3 gap-2 text-center text-[10px] font-mono font-bold uppercase tracking-wider text-hprh-clay select-none">
+              <div className={`pb-2 border-b-2 transition-colors ${activeStep >= 1 ? 'border-hprh-sage text-hprh-pine' : 'border-hprh-sage/10'}`}>
+                1. Location
+              </div>
+              <div className={`pb-2 border-b-2 transition-colors ${activeStep >= 2 ? 'border-hprh-sage text-hprh-pine' : 'border-hprh-sage/10'}`}>
+                2. Transport Fee
+              </div>
+              <div className={`pb-2 border-b-2 transition-colors ${activeStep >= 5 ? 'border-hprh-sage text-hprh-pine' : 'border-hprh-sage/10'}`}>
+                3. Active Route
+              </div>
             </div>
-            <div className={`pb-2 border-b-2 transition-colors ${activeStep >= 2 ? 'border-hprh-sage text-hprh-pine' : 'border-hprh-sage/10'}`}>
-              2. Terms Gate
+          ) : (
+            <div className="grid grid-cols-5 gap-2 text-center text-[10px] font-mono font-bold uppercase tracking-wider text-hprh-clay select-none">
+              <div className={`pb-2 border-b-2 transition-colors ${activeStep >= 1 ? 'border-hprh-sage text-hprh-pine' : 'border-hprh-sage/10'}`}>
+                1. Location
+              </div>
+              <div className={`pb-2 border-b-2 transition-colors ${activeStep >= 2 ? 'border-hprh-sage text-hprh-pine' : 'border-hprh-sage/10'}`}>
+                2. Transport Fee
+              </div>
+              <div className={`pb-2 border-b-2 transition-colors ${activeStep >= 3 ? 'border-hprh-sage text-hprh-pine' : 'border-hprh-sage/10'}`}>
+                3. Terms Gate
+              </div>
+              <div className={`pb-2 border-b-2 transition-colors ${activeStep >= 4 ? 'border-hprh-sage text-hprh-pine' : 'border-hprh-sage/10'}`}>
+                4. Deposit
+              </div>
+              <div className={`pb-2 border-b-2 transition-colors ${activeStep >= 5 ? 'border-hprh-sage text-hprh-pine' : 'border-hprh-sage/10'}`}>
+                5. Tracking
+              </div>
             </div>
-            <div className={`pb-2 border-b-2 transition-colors ${activeStep >= 3 ? 'border-hprh-sage text-hprh-pine' : 'border-hprh-sage/10'}`}>
-              3. Deposit
-            </div>
-            <div className={`pb-2 border-b-2 transition-colors ${activeStep >= 4 ? 'border-hprh-sage text-hprh-pine' : 'border-hprh-sage/10'}`}>
-              4. Tracking
-            </div>
-          </div>
+          )
         )}
 
         {/* Main Work Area Card */}
@@ -522,7 +571,7 @@ export const FosterLocation: React.FC = () => {
                     <User className="w-8 h-8 text-hprh-sage mx-auto" />
                     <h4 className="font-bold text-hprh-pine">Self Pickup</h4>
                     <p className="text-xs text-hprh-clay">
-                      Coordinate a direct pickup at our rescue hub. No fees or deposits required.
+                      Coordinate a direct pickup at our rescue hub. A refundable security deposit is required.
                     </p>
                   </div>
 
@@ -541,19 +590,19 @@ export const FosterLocation: React.FC = () => {
             )}
 
             {/* STEP 0 SUCCESS: Self Pickup Confirmed */}
-            {assignment.status === 'SELF_PICKUP' && (
+            {assignment.status === 'SELF_PICKUP' && status === 'SELF_PICKUP_CONFIRMED' && (
               <div className="space-y-6 text-center py-6">
                 <div className="mx-auto w-16 h-16 bg-hprh-sage/10 text-hprh-sage flex items-center justify-center rounded-full">
                   <CheckCircle2 className="w-10 h-10" />
                 </div>
-                <h3 className="text-2xl font-bold font-display text-hprh-pine">Self Pickup Registered</h3>
+                <h3 className="text-2xl font-bold font-display text-hprh-pine">Self Pickup Confirmed</h3>
                 <p className="text-sm text-hprh-clay max-w-md mx-auto">
-                  You have elected to pick up <strong>{pet?.name}</strong> directly from our rescue hub.
+                  Your self-pickup coordination is fully approved! You are ready to pick up <strong>{pet?.name}</strong> directly from our rescue hub.
                 </p>
                 <div className="bg-hprh-paper/50 border border-hprh-sage/20 rounded-xl p-4 text-left space-y-2 max-w-md mx-auto text-xs">
                   <span className="font-bold block text-hprh-pine">Next Steps:</span>
                   <p className="text-hprh-pine/70 leading-relaxed">
-                    Our hub coordinators will contact you directly at <strong>{assignment.phone || assignment.email}</strong> to schedule a date and time for pickup. No security deposit or distance fee is required.
+                    You have successfully signed the terms and paid your refundable security deposit. Our hub coordinators will contact you directly at <strong>{assignment.phone || assignment.email}</strong> to schedule a date and time for pickup.
                   </p>
                 </div>
               </div>
@@ -610,14 +659,14 @@ export const FosterLocation: React.FC = () => {
                       <div>
                         <span className="text-hprh-clay block uppercase">Security Deposit</span>
                         <span className={`font-bold uppercase ${!calculatedQuote.depositRequired ? 'text-green-600' : 'text-amber-600'}`}>
-                          {!calculatedQuote.depositRequired ? 'Waived (MI Resident)' : '$100.00 Refundable'}
+                          {!calculatedQuote.depositRequired ? 'Waived (MI Resident)' : `$${depositAmount.toFixed(2)} Refundable`}
                         </span>
                       </div>
                     </div>
 
                     <div className="border-t border-hprh-sage/10 pt-4 flex justify-end">
                       <Button onClick={handleConfirmQuote} variant="primary" disabled={submitting} className="w-full sm:w-auto">
-                        Confirm Route & Save
+                        Confirm Route & Proceed to Payment
                       </Button>
                     </div>
                   </div>
@@ -625,8 +674,253 @@ export const FosterLocation: React.FC = () => {
               </div>
             )}
 
-            {/* STEP 2: Terms & Conditions Gate */}
-            {activeStep === 2 && assignment.deposit_terms_agreed === false && (
+            {/* STEP 2: Transport Fee Payment */}
+            {activeStep === 2 && (status === 'QUOTE_GENERATED' || status === 'TRANSPORT_FEE_PENDING') && (
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-8 animate-fade-in">
+                {/* Left Col: Details */}
+                <div className="md:col-span-7 space-y-6">
+                  
+                  {/* Distance Summary Card */}
+                  <div className="bg-white/80 border border-hprh-sage/20 rounded-2xl p-6 space-y-3 shadow-md">
+                    <h4 className="font-mono text-[10px] uppercase tracking-widest font-extrabold text-hprh-pine/70 border-b border-hprh-sage/10 pb-2">
+                      Transit Quote & Location Details
+                    </h4>
+                    <div className="grid grid-cols-2 gap-4 text-xs font-mono">
+                      <div>
+                        <span className="text-[8px] text-hprh-clay block uppercase">Origin Coordinates</span>
+                        <span className="font-bold">{pet?.current_location}</span>
+                      </div>
+                      <div>
+                        <span className="text-[8px] text-hprh-clay block uppercase">Delivery Coordinates</span>
+                        <span className="font-bold">{transportRequest?.destination_address}</span>
+                      </div>
+                      <div>
+                        <span className="text-[8px] text-hprh-clay block uppercase">Total Route</span>
+                        <span className="font-bold text-hprh-sage">~{parseFloat(transportRequest?.distance_miles as any || 0).toFixed(1)} miles</span>
+                      </div>
+                      <div>
+                        <span className="text-[8px] text-hprh-clay block uppercase">Transport Quote Amount</span>
+                        <span className="font-bold text-hprh-clay">
+                          {parseFloat(transportRequest?.transport_fee_amount as any || 0).toLocaleString('en-US', { style: 'currency', currency: transportRequest?.transport_fee_currency || 'USD' })}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Payment Details Card */}
+                  <div className="bg-white/80 border border-hprh-sage/20 rounded-2xl p-6 space-y-4 shadow-md">
+                    <div className="flex items-center justify-between border-b border-hprh-sage/10 pb-3">
+                      <h4 className="font-mono text-[10px] uppercase tracking-widest font-extrabold text-hprh-pine/70">
+                        Step 1: Wire Transport Payment
+                      </h4>
+                      <Shield className="w-4.5 h-4.5 text-hprh-sage" />
+                    </div>
+
+                    <p className="text-xs text-hprh-pine/60 leading-relaxed font-sans">
+                      Please submit the transport fee of <strong className="text-hprh-pine">{parseFloat(transportRequest?.transport_fee_amount as any || 0).toLocaleString('en-US', { style: 'currency', currency: transportRequest?.transport_fee_currency || 'USD' })}</strong> using one of our payment portals below and upload the receipt.
+                    </p>
+
+                    {paymentMethods.length === 0 ? (
+                      <div className="text-center py-6 bg-hprh-paper border border-dashed border-hprh-sage/10 rounded-xl text-xs text-hprh-clay">
+                        No active payment methods configured. Please contact support.
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {paymentMethods.length > 1 && (
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-mono uppercase tracking-wider font-bold text-hprh-clay block">
+                              Select Payment Account
+                            </label>
+                            <select
+                              value={selectedMethodId}
+                              onChange={(e) => setSelectedMethodId(e.target.value)}
+                              className="w-full bg-hprh-paper border border-hprh-sage/15 focus:border-hprh-sage focus:ring-1 focus:ring-hprh-sage rounded-xl px-3 py-2 text-xs text-hprh-pine focus:outline-none"
+                            >
+                              {paymentMethods.map(m => (
+                                <option key={m.id} value={m.id}>{m.display_label || m.bank_name}</option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+
+                        {selectedMethod && (
+                          <div className="bg-hprh-paper/50 border border-hprh-sage/15 rounded-xl p-4 space-y-3 relative overflow-hidden text-xs font-mono">
+                            <div className="flex items-center gap-3">
+                              <div className="w-9 h-9 bg-white border border-hprh-sage/10 rounded flex items-center justify-center p-1 overflow-hidden shadow-sm flex-shrink-0">
+                                {selectedMethod.logo_url ? (
+                                  <img src={selectedMethod.logo_url || undefined} alt={selectedMethod.display_label || undefined} className="w-full h-full object-contain" />
+                                ) : (
+                                  <Building2 className="w-4 h-4 text-hprh-sage" />
+                                )}
+                              </div>
+                              <div>
+                                <div className="font-bold text-sm text-hprh-pine">{selectedMethod.display_label || selectedMethod.bank_name}</div>
+                                <span className="font-mono text-[8px] uppercase px-1.5 py-0.5 bg-hprh-sage/10 text-hprh-sage rounded font-bold">
+                                  {selectedMethod.method_type.replace(/_/g, ' ')}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="space-y-1.5 pt-1">
+                              <div className="flex items-center justify-between border-b border-hprh-sage/5 pb-1">
+                                <span className="text-[9px] text-hprh-clay uppercase">Account Name</span>
+                                <span className="font-bold text-hprh-pine">{selectedMethod.account_name}</span>
+                              </div>
+
+                              {selectedMethod.method_type === 'bank_transfer' ? (
+                                <>
+                                  <div className="flex items-center justify-between border-b border-hprh-sage/5 pb-1">
+                                    <span className="text-[9px] text-hprh-clay uppercase">Account Number</span>
+                                    <div className="flex items-center gap-1">
+                                      <span className="font-bold">{selectedMethod.account_number}</span>
+                                      <button type="button" onClick={() => handleCopyText(selectedMethod.account_number || '')} className="text-hprh-sage hover:text-hprh-pine">
+                                        {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                                      </button>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center justify-between border-b border-hprh-sage/5 pb-1">
+                                    <span className="text-[9px] text-hprh-clay uppercase">Routing Number</span>
+                                    <div className="flex items-center gap-1">
+                                      <span className="font-bold">{selectedMethod.routing_number}</span>
+                                      <button type="button" onClick={() => handleCopyText(selectedMethod.routing_number || '')} className="text-hprh-sage hover:text-hprh-pine">
+                                        {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                                      </button>
+                                    </div>
+                                  </div>
+                                </>
+                              ) : (
+                                <div className="flex items-center justify-between border-b border-hprh-sage/5 pb-1">
+                                  <span className="text-[9px] text-hprh-clay uppercase">Identifier / Handle</span>
+                                  <div className="flex items-center gap-1">
+                                    <span className="font-bold text-hprh-clay">{selectedMethod.account_number}</span>
+                                    <button type="button" onClick={() => handleCopyText(selectedMethod.account_number || '')} className="text-hprh-sage hover:text-hprh-pine">
+                                      {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            {selectedMethod.notes && (
+                              <div className="bg-white/40 border border-hprh-sage/10 rounded-xl p-2.5 text-[10px] text-hprh-pine/60 leading-relaxed italic">
+                                <strong>Note:</strong> {selectedMethod.notes}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Right Col: Upload proof form */}
+                <div className="md:col-span-5">
+                  {status === 'TRANSPORT_FEE_PENDING' ? (
+                    <div className="bg-white/80 border border-hprh-sage/20 rounded-2xl p-6 text-center space-y-5 shadow-md relative overflow-hidden">
+                      <div className="absolute top-0 left-0 w-full h-1 bg-amber-500"></div>
+                      <Clock className="w-12 h-12 text-amber-500 mx-auto animate-pulse" />
+                      <div className="space-y-1">
+                        <span className="font-mono text-[9px] uppercase tracking-widest text-amber-500 font-bold block">Verification Pending</span>
+                        <h3 className="font-display text-lg font-bold text-hprh-pine">Proof Submitted</h3>
+                      </div>
+                      <p className="text-xs text-hprh-pine/60 leading-relaxed font-sans">
+                        We are verifying your transport payment proof of <strong>{parseFloat(transportRequest?.transport_fee_amount as any || 0).toLocaleString('en-US', { style: 'currency', currency: transportRequest?.transport_fee_currency || 'USD' })}</strong>.
+                      </p>
+                      <div className="bg-hprh-paper/40 border border-hprh-sage/10 rounded-xl p-3 text-[10px] text-hprh-clay leading-relaxed font-mono">
+                        Audits usually take <strong>24-48 hours</strong>. You will receive an email notification once approved to request the security deposit step.
+                      </div>
+                    </div>
+                  ) : (
+                    <form onSubmit={(e) => handlePaymentSubmit(e, 'TRANSPORT_FEE')} className="bg-white/80 border border-hprh-sage/20 rounded-2xl p-6 space-y-4 shadow-md">
+                      <div className="border-b border-hprh-sage/10 pb-2">
+                        <h4 className="font-mono text-[10px] uppercase tracking-widest font-extrabold text-hprh-pine/70">
+                          Step 2: Upload Proof Receipt
+                        </h4>
+                      </div>
+
+                      <Input
+                        label="Amount Transferred (USD) *"
+                        type="number"
+                        step="0.01"
+                        min="0.01"
+                        value={amountClaimed}
+                        onChange={(e) => setAmountClaimed(e.target.value)}
+                        required
+                        placeholder={`Expected: ${parseFloat(transportRequest?.transport_fee_amount as any || 0).toFixed(2)}`}
+                      />
+
+                      <div className="space-y-2">
+                        <label className="block text-xs font-mono uppercase tracking-widest text-hprh-clay font-bold">Receipt Screenshot *</label>
+                        {!selectedFile ? (
+                          <div className="border-2 border-dashed border-hprh-sage/30 hover:border-hprh-sage/60 transition-colors rounded-xl p-6 text-center cursor-pointer relative bg-hprh-paper/20">
+                            <input
+                              type="file"
+                              accept="image/jpeg,image/png,image/jpg,image/heic,application/pdf"
+                              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                              onChange={handleFileChange}
+                              required
+                            />
+                            <div className="space-y-2">
+                              <Upload className="w-8 h-8 text-hprh-clay mx-auto" />
+                              <div className="text-xs font-semibold text-hprh-pine">Click to upload deposit screenshot</div>
+                              <div className="text-[10px] text-hprh-clay">Allowed formats: JPG, PNG, HEIC, PDF. Max 5MB.</div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="bg-hprh-paper/50 border border-hprh-sage/20 rounded-xl p-4 flex items-center justify-between gap-4 text-xs font-mono">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <FileText className="w-6 h-6 text-hprh-sage shrink-0" />
+                              <div className="min-w-0">
+                                <div className="font-semibold text-hprh-pine truncate">{selectedFile.name}</div>
+                                <div className="text-[10px] text-hprh-clay">{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</div>
+                              </div>
+                            </div>
+                            <button 
+                              type="button" 
+                              onClick={() => { setSelectedFile(null); setPreviewUrl(null); }}
+                              className="text-red-500 hover:text-red-700 font-bold"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        )}
+
+                        {fileError && <p className="text-xs text-red-600 font-semibold">{fileError}</p>}
+                        {previewUrl && (
+                          <div className="border border-hprh-sage/10 rounded-xl p-2 bg-white max-w-xs overflow-hidden">
+                            <img src={previewUrl} alt="Receipt Preview" className="max-h-24 rounded mx-auto object-contain" />
+                          </div>
+                        )}
+                      </div>
+
+                      <Input
+                        label="Reference / Transaction Notes"
+                        id="referenceNote"
+                        placeholder="e.g. Venmo transfer memo"
+                        value={referenceNote}
+                        onChange={(e) => setReferenceNote(e.target.value)}
+                      />
+
+                      <div className="pt-2">
+                        <Button type="submit" disabled={submitting || !selectedFile} variant="primary" className="w-full">
+                          {submitting ? (
+                            <>
+                              <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                              Submitting Receipt...
+                            </>
+                          ) : (
+                            'Submit Transfer Receipt'
+                          )}
+                        </Button>
+                      </div>
+                    </form>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* STEP 3: Terms & Conditions Gate */}
+            {activeStep === 3 && assignment.deposit_terms_agreed === false && (
               <div className="space-y-6 animate-fade-in">
                 <div className="space-y-2">
                   <h3 className="text-lg font-bold text-hprh-pine">Refundable Security Deposit Agreement</h3>
@@ -638,7 +932,7 @@ export const FosterLocation: React.FC = () => {
                 <div className="bg-hprh-paper/50 border border-hprh-sage/20 rounded-xl p-6 space-y-4 max-h-60 overflow-y-auto text-xs text-hprh-pine/80 leading-relaxed font-mono">
                   <h5 className="font-bold text-hprh-pine uppercase">Section 1: General Deposit Policies</h5>
                   <p>
-                    Out-of-state fosters must submit a security deposit of $100.00 USD. Fosters inside the state of Michigan (MI) are eligible for a complete waiver of this security deposit.
+                    Out-of-state fosters must submit a security deposit of $${depositAmount.toFixed(2)} USD. Fosters inside the state of Michigan (MI) are eligible for a complete waiver of this security deposit.
                   </p>
                   <h5 className="font-bold text-hprh-pine uppercase">Section 2: Terms of Return & Refundability</h5>
                   <p>
@@ -687,8 +981,8 @@ export const FosterLocation: React.FC = () => {
               </div>
             )}
 
-            {/* STEP 3: Security Deposit Payment Proof Upload */}
-            {activeStep === 3 && (
+            {/* STEP 4: Security Deposit Payment Proof Upload */}
+            {activeStep === 4 && (
               <div className="space-y-6 animate-fade-in">
                 {status === 'DEPOSIT_PROOF_SUBMITTED' ? (
                   <div className="text-center py-8 space-y-4">
@@ -703,7 +997,7 @@ export const FosterLocation: React.FC = () => {
                     <div className="space-y-2">
                       <h3 className="text-lg font-bold text-hprh-pine">Submit Security Deposit Receipt</h3>
                       <p className="text-xs text-hprh-clay">
-                        Your deposit terms have been signed. Please submit your <strong>$100.00 USD</strong> refundable security deposit using one of the portals below and upload the receipt.
+                        Your deposit terms have been signed. Please submit your <strong>${depositAmount.toFixed(2)} USD</strong> refundable security deposit using one of the portals below and upload the receipt.
                       </p>
                     </div>
 
@@ -809,7 +1103,7 @@ export const FosterLocation: React.FC = () => {
                           label="Amount Sent"
                           id="amountSent"
                           type="number"
-                          value="100.00"
+                          value={depositAmount.toFixed(2)}
                           disabled
                         />
                         <Input
@@ -839,8 +1133,8 @@ export const FosterLocation: React.FC = () => {
               </div>
             )}
 
-            {/* STEP 4: Live Coordination Timeline & Tracking / In-state Completion */}
-            {activeStep === 4 && (
+            {/* STEP 5: Live Coordination Timeline & Tracking / In-state Completion */}
+            {activeStep === 5 && (
               <div className="space-y-8 animate-fade-in">
                 {assignment.deposit_required === false && !transportRequest?.tracking_id ? (
                   <div className="space-y-6 text-center py-6">

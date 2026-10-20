@@ -824,7 +824,7 @@ export const Checkout: React.FC = () => {
                 </Button>
 
                 <p className="text-[9px] text-center text-hprh-pine/40 leading-relaxed">
-                  Uploading files represents an legal signature confirming that adoption fee funds have been wired to Happy Paws Rescue Haven. Fraudulent uploads are subject to application voiding.
+                  Uploading files represents an legal signature confirming that adoption fee funds have been wired to Rescue4paws. Fraudulent uploads are subject to application voiding.
                 </p>
 
               </div>

@@ -6,26 +6,26 @@ interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement
 }
 
 /**
- * Shared Textarea primitive for forms, matching custom focus rings.
+ * Shared Textarea primitive for forms with modern rounded-xl styling and indigo focus ring.
  */
 export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
   ({ label, error, className = '', ...props }, ref) => {
     return (
       <div className="w-full flex flex-col gap-1.5">
         {label && (
-          <label className="text-xs uppercase tracking-wider text-hprh-pine/70 font-bold select-none">
+          <label className="text-xs font-semibold text-slate-700 select-none">
             {label}
           </label>
         )}
         <textarea
           ref={ref}
-          className={`bg-hprh-paper border-2 border-hprh-pine/15 focus:border-hprh-sage focus:ring-1 focus:ring-hprh-sage rounded px-3.5 py-2.5 text-sm text-hprh-pine font-sans placeholder-hprh-pine/40 transition-colors focus:outline-none min-h-[100px] resize-y ${
-            error ? 'border-hprh-clay focus:border-hprh-clay focus:ring-hprh-clay' : ''
+          className={`bg-slate-50 border border-slate-200 focus:border-indigo-600 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 rounded-xl px-4 py-3 text-sm text-slate-900 font-sans placeholder-slate-400 transition-all focus:outline-none min-h-[110px] resize-y ${
+            error ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-500/10 bg-rose-50/30' : ''
           } ${className}`}
           {...props}
         />
         {error && (
-          <span className="text-[10px] text-hprh-clay uppercase tracking-wide font-semibold">
+          <span className="text-xs text-rose-600 font-medium">
             {error}
           </span>
         )}

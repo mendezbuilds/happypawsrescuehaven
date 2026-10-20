@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import supabase from '../../lib/supabase';
 import Container from '../../components/ui/Container';
-import { Search, AlertTriangle, Loader2, Footprints } from 'lucide-react';
+import { Search, AlertTriangle, Loader2, Footprints, Package, ArrowRight, ShieldCheck, MapPin, Calendar, Clock } from 'lucide-react';
 import type { ShipmentStatusUpdate } from '../../lib/types';
 
 export const Transport: React.FC = () => {
@@ -15,7 +15,7 @@ export const Transport: React.FC = () => {
     e.preventDefault();
     const cleanId = trackingId.trim().toUpperCase();
     if (!cleanId) {
-      setError('Please enter a tracking ID.');
+      setError('Please enter a valid tracking ID.');
       setShipment(null);
       return;
     }
@@ -36,7 +36,7 @@ export const Transport: React.FC = () => {
       // Keep it secure: if no match found or status is not at or after TRACKING_ACTIVE, show generic not-found
       const activeStatuses = ['TRACKING_ACTIVE', 'DELIVERED'];
       if (!data || !activeStatuses.includes(data.status)) {
-        setError("We couldn't find a shipment with that tracking ID. Please check the ID from your confirmation email and try again.");
+        setError("We couldn't find an active shipment with that tracking ID. Please verify the ID from your confirmation email and try again.");
         return;
       }
 
@@ -53,43 +53,40 @@ export const Transport: React.FC = () => {
       setShipment(data);
     } catch (err: any) {
       console.error('Error fetching tracking info:', err);
-      setError("We couldn't find a shipment with that tracking ID. Please check the ID from your confirmation email and try again.");
+      setError("We couldn't find an active shipment with that tracking ID. Please verify the ID from your confirmation email and try again.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="py-12 md:py-20 bg-hprh-paper min-h-screen text-hprh-pine font-sans flex flex-col justify-start">
-      <Container className="max-w-2xl space-y-8">
+    <div className="py-12 md:py-20 bg-slate-50 min-h-screen text-slate-800 font-sans relative overflow-hidden">
+      {/* Ambient Aurora Orbs */}
+      <div className="absolute top-0 right-1/4 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-1/2 left-10 w-80 h-80 bg-sky-500/10 rounded-full blur-3xl pointer-events-none" />
+
+      <Container className="max-w-3xl space-y-8 relative z-10">
         
         {/* Header Block */}
         <div className="text-center space-y-3">
-          <span className="font-mono text-xs uppercase tracking-widest text-hprh-sage font-bold bg-hprh-sage/5 border border-hprh-sage/20 px-3 py-1 rounded inline-block rotate-[1deg]">
-            Logistics Coordination Gateway
-          </span>
-          <h1 className="text-3xl sm:text-5xl font-extrabold font-display text-hprh-pine mt-2">
-            Track Your Pet's Journey
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-bold uppercase tracking-wider">
+            <ShieldCheck className="w-4 h-4 text-indigo-600" />
+            Rescue4paws Logistics Gateway
+          </div>
+          <h1 className="text-3xl sm:text-5xl font-extrabold font-display text-slate-900 tracking-tight">
+            Track Pet Companion Journey
           </h1>
-          <p className="text-xs sm:text-sm text-hprh-pine/60 max-w-md mx-auto leading-relaxed">
-            Enter the unique tracking ID provided in your transit confirmation dossier to audit your passenger's journey status.
+          <p className="text-sm text-slate-500 max-w-lg mx-auto leading-relaxed">
+            Real-time verified transit monitoring for foster relocations, rescue dispatches, and forever-home deliveries.
           </p>
         </div>
 
-        {/* Input Box Card */}
-        <div
-          className="bg-hprh-paper-dark border-2 border-hprh-pine/20 rounded shadow-md p-6 max-w-md mx-auto relative overflow-hidden"
-          style={{
-            backgroundImage: 'radial-gradient(#1f2a1e05 1px, transparent 0)',
-            backgroundSize: '16px 16px',
-          }}
-        >
-          <div className="absolute top-0 left-0 w-full h-1 bg-hprh-clay/40"></div>
-          
+        {/* Tracking Search Input Card */}
+        <div className="bg-white border border-slate-200/80 rounded-3xl shadow-xl p-6 sm:p-8">
           <form onSubmit={handleSearch} className="space-y-4">
-            <div className="flex flex-col gap-1.5 text-left">
-              <label className="text-[10px] font-mono uppercase tracking-widest text-hprh-pine/70 font-bold select-none">
-                Pet Tracking ID Dossier
+            <div className="space-y-1.5 text-left">
+              <label className="text-xs font-bold text-slate-700 uppercase tracking-wider select-none">
+                Shipment Tracking ID
               </label>
               <div className="relative">
                 <input
@@ -97,62 +94,88 @@ export const Transport: React.FC = () => {
                   value={trackingId}
                   onChange={(e) => setTrackingId(e.target.value)}
                   placeholder="e.g. TR-2026-9938"
-                  className="w-full bg-hprh-paper border-2 border-hprh-pine/15 focus:border-hprh-sage focus:ring-1 focus:ring-hprh-sage/20 rounded py-2.5 px-4 pr-10 text-xs font-mono font-bold placeholder-hprh-pine/30 text-hprh-pine uppercase outline-none transition-all"
+                  className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-600 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 rounded-2xl py-3.5 px-4 pr-12 text-sm font-mono font-bold placeholder-slate-400 text-slate-900 uppercase outline-none transition-all"
                   required
                 />
-                <Search className="w-4 h-4 text-hprh-pine/40 absolute right-3.5 top-1/2 -translate-y-1/2" />
+                <Search className="w-5 h-5 text-slate-400 absolute right-4 top-1/2 -translate-y-1/2" />
               </div>
             </div>
             
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-hprh-sage hover:bg-hprh-sage/95 text-hprh-paper disabled:bg-hprh-sage/50 text-xs font-mono font-bold py-3 px-6 rounded uppercase tracking-wider transition-all flex items-center justify-center gap-2"
+              className="w-full bg-gradient-to-r from-indigo-600 to-sky-600 hover:from-indigo-700 hover:to-sky-700 text-white font-bold text-sm py-4 px-6 rounded-2xl shadow-lg shadow-indigo-600/25 transition-all flex items-center justify-center gap-2 active:scale-[0.99] disabled:opacity-50"
             >
               {loading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Accessing Registry...
+                  Querying Transit Database...
                 </>
               ) : (
-                'Audit Journey Status'
+                'Track Shipment Status'
               )}
             </button>
           </form>
 
           {error && (
-            <div className="bg-hprh-clay/10 border border-hprh-clay/20 text-hprh-pine p-4 rounded text-xs text-left flex items-start gap-3 mt-4 animate-in fade-in duration-200">
-              <AlertTriangle className="w-5 h-5 text-hprh-clay flex-shrink-0" />
-              <div className="space-y-1">
-                <span className="font-mono uppercase font-bold text-hprh-clay block">Docket Search Alert</span>
-                <p className="leading-relaxed font-sans">{error}</p>
+            <div className="bg-rose-50 border border-rose-200 text-rose-800 p-4 rounded-2xl text-xs text-left flex items-start gap-3 mt-4 animate-in fade-in duration-200">
+              <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+              <div className="space-y-0.5">
+                <span className="font-bold uppercase tracking-wider text-rose-900 block">Tracking Notice</span>
+                <p className="leading-relaxed">{error}</p>
               </div>
             </div>
           )}
         </div>
 
+        {/* Ship a Package Card */}
+        <div className="bg-slate-900 rounded-3xl p-6 sm:p-8 text-center sm:text-left text-white shadow-xl border border-slate-800 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none" />
+          <div className="relative flex flex-col sm:flex-row items-center justify-between gap-6">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center shrink-0 border border-indigo-500/30">
+                <Package className="w-6 h-6" />
+              </div>
+              <div className="space-y-1">
+                <h2 className="font-display font-extrabold text-lg text-white">Need to Ship Something?</h2>
+                <p className="text-xs text-slate-400 leading-relaxed max-w-md">
+                  Send pets, supplies, essential items, and medical documentation domestically or internationally. Instant quote by route.
+                </p>
+              </div>
+            </div>
+            <a
+              href={import.meta.env.VITE_TRANSPORT_SUBDOMAIN_URL || 'https://ship.happypawsrescuehaven.com'}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-sky-500 hover:from-indigo-600 hover:to-sky-600 text-white font-bold text-xs uppercase tracking-wider px-6 py-3.5 rounded-full shadow-lg shadow-indigo-500/25 transition-all shrink-0 active:scale-95"
+            >
+              Ship a Package <ArrowRight className="w-4 h-4" />
+            </a>
+          </div>
+        </div>
+
         {/* Tracking Details Display */}
         {shipment && (
-          <div className="bg-hprh-paper-dark border-2 border-hprh-pine/20 rounded shadow-md p-6 sm:p-8 space-y-6 text-left animate-in fade-in duration-300 relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-1.5 bg-hprh-sage"></div>
-
+          <div className="bg-white border border-slate-200/80 rounded-3xl shadow-xl p-6 sm:p-8 space-y-6 text-left animate-in fade-in duration-300">
             {/* Docket Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b-2 border-dashed border-hprh-pine/20 pb-5 gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-5 gap-4">
               <div>
-                <span className="font-mono text-[9px] uppercase tracking-widest text-hprh-pine/40 font-bold block mb-1">
-                  Verified Route Registry
+                <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400 block mb-1">
+                  Verified Dispatch Number
                 </span>
-                <h2 className="font-mono text-lg sm:text-xl font-bold text-hprh-pine uppercase tracking-wide">
+                <h2 className="font-mono text-xl font-bold text-slate-900 tracking-wide">
                   {shipment.tracking_id}
                 </h2>
               </div>
               <div>
                 {shipment.status === 'DELIVERED' ? (
-                  <span className="bg-hprh-sage/10 border border-hprh-sage/30 text-hprh-sage text-[10px] font-mono font-bold uppercase tracking-wider px-3 py-1 rounded select-none">
+                  <span className="inline-flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold uppercase tracking-wider px-3.5 py-1.5 rounded-full">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
                     Delivered
                   </span>
                 ) : (
-                  <span className="bg-hprh-gold/10 border border-hprh-gold/30 text-hprh-gold/80 text-[10px] font-mono font-bold uppercase tracking-wider px-3 py-1 rounded select-none animate-pulse">
+                  <span className="inline-flex items-center gap-1.5 bg-sky-50 border border-sky-200 text-sky-700 text-xs font-bold uppercase tracking-wider px-3.5 py-1.5 rounded-full">
+                    <span className="w-2 h-2 rounded-full bg-sky-500 animate-ping" />
                     In Transit
                   </span>
                 )}
@@ -161,29 +184,29 @@ export const Transport: React.FC = () => {
 
             {/* Passenger Pet Profile */}
             {shipment.pets && (
-              <div className="flex items-center gap-4 bg-hprh-paper/50 border border-hprh-pine/10 p-4 rounded shadow-sm">
-                <div className="w-16 h-16 bg-white border border-hprh-pine/10 rounded overflow-hidden flex-shrink-0 flex items-center justify-center p-0.5">
+              <div className="flex items-center gap-4 bg-slate-50 border border-slate-200/80 p-4 rounded-2xl">
+                <div className="w-16 h-16 bg-white border border-slate-200 rounded-xl overflow-hidden shrink-0 flex items-center justify-center p-0.5 shadow-xs">
                   {shipment.pets.photo_url || (shipment.pets.photos && shipment.pets.photos.length > 0) ? (
                     <img
                       src={shipment.pets.photo_url || shipment.pets.photos[0]}
                       alt={shipment.pets.name}
-                      className="w-full h-full object-cover rounded-sm"
+                      className="w-full h-full object-cover rounded-lg"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-hprh-pine/5 text-hprh-pine/30 font-mono text-[10px]">
+                    <div className="w-full h-full flex items-center justify-center bg-slate-100 text-slate-400 text-xs font-medium">
                       No Photo
                     </div>
                   )}
                 </div>
-                <div className="space-y-1">
-                  <span className="font-mono text-[8px] uppercase tracking-widest text-hprh-pine/40 font-bold block">
+                <div className="space-y-0.5">
+                  <span className="text-[10px] uppercase tracking-wider text-slate-400 font-bold block">
                     Travel Passenger
                   </span>
-                  <span className="font-display text-xl font-extrabold text-hprh-pine block">
+                  <span className="font-display text-lg font-extrabold text-slate-900 block">
                     {shipment.pets.name}
                   </span>
-                  <span className="text-[10px] text-hprh-pine/60 block font-sans">
-                    {shipment.pets.breed || 'Mixed Breed'} • {shipment.pets.age || 'Unknown Age'}
+                  <span className="text-xs text-slate-500 block">
+                    {shipment.pets.breed || 'Companion Mix'} • {shipment.pets.age || 'Unknown Age'}
                   </span>
                 </div>
               </div>
@@ -191,64 +214,62 @@ export const Transport: React.FC = () => {
 
             {/* Progress Stepper / Real Shipment Timeline */}
             <div className="space-y-6 pt-2">
-              <h3 className="font-mono text-xs uppercase tracking-widest font-bold text-hprh-sage border-b border-hprh-sage/20 pb-1">
-                Shipment Tracking Timeline
+              <h3 className="text-xs uppercase tracking-wider font-bold text-slate-900 border-b border-slate-100 pb-2 flex items-center gap-2">
+                <Clock className="w-4 h-4 text-indigo-600" />
+                Transit Timeline & Status Updates
               </h3>
 
               {updates.length === 0 ? (
-                <div className="bg-hprh-paper border border-hprh-pine/10 p-4 rounded text-xs text-hprh-pine/70 italic font-sans">
-                  Your pet's journey is being prepared. Check back soon for updates!
+                <div className="bg-slate-50 border border-slate-200 p-5 rounded-2xl text-xs text-slate-600 italic">
+                  Your companion's journey is currently being prepared. Real-time checkpoints will appear here once underway.
                 </div>
               ) : (
-                <div className="relative pl-6 space-y-6 border-l-2 border-dashed border-hprh-pine/15 py-1 ml-2">
+                <div className="relative pl-6 space-y-6 border-l-2 border-indigo-100 py-1 ml-2">
                   {updates.map((update: ShipmentStatusUpdate) => {
                     const isDelivered = update.status === 'DELIVERED';
                     const isHoldOrCancelled = ['ON_HOLD', 'CANCELLED'].includes(update.status);
                     
-                    let badgeColor = 'bg-hprh-sage border-hprh-sage text-hprh-paper';
-                    let labelBg = 'bg-hprh-sage/10 text-hprh-sage border-hprh-sage/20';
+                    let dotColor = 'bg-indigo-600 border-white ring-4 ring-indigo-100';
+                    let labelClass = 'bg-indigo-50 text-indigo-700 border-indigo-200';
 
                     if (isHoldOrCancelled) {
-                      badgeColor = 'bg-hprh-clay border-hprh-clay text-hprh-paper';
-                      labelBg = 'bg-hprh-clay/10 text-hprh-clay border-hprh-clay/20';
+                      dotColor = 'bg-rose-600 border-white ring-4 ring-rose-100';
+                      labelClass = 'bg-rose-50 text-rose-700 border-rose-200';
                     } else if (isDelivered) {
-                      badgeColor = 'bg-hprh-gold border-hprh-gold text-hprh-pine';
-                      labelBg = 'bg-hprh-gold/15 text-hprh-gold/90 border-hprh-gold/30';
+                      dotColor = 'bg-emerald-600 border-white ring-4 ring-emerald-100';
+                      labelClass = 'bg-emerald-50 text-emerald-700 border-emerald-200';
                     }
 
-                    // Warm timestamp formatting (e.g. "June 22, 2026 at 3:40 PM")
                     const d = new Date(update.created_at);
-                    const dateStr = d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+                    const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
                     const timeStr = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-                    const warmDate = `${dateStr} at ${timeStr}`;
+                    const warmDate = `${dateStr} • ${timeStr}`;
 
                     return (
                       <div key={update.id} className="relative">
                         {/* Node Bullet */}
-                        <div className={`absolute -left-[31px] top-1 w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${badgeColor}`}>
-                          <div className="w-1.5 h-1.5 rounded-full bg-current" />
-                        </div>
+                        <div className={`absolute -left-[31px] top-1 w-3.5 h-3.5 rounded-full border-2 ${dotColor}`} />
 
                         {/* Text descriptions */}
                         <div className="space-y-1.5">
                           <div className="flex flex-wrap items-center gap-2">
-                            <span className={`text-[9px] font-mono font-bold uppercase tracking-wider px-2.5 py-0.5 border rounded-sm ${labelBg}`}>
+                            <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 border rounded-full ${labelClass}`}>
                               {update.status.replace(/_/g, ' ')}
                             </span>
-                            <span className="text-[10px] text-hprh-pine/50 font-mono">
+                            <span className="text-[11px] text-slate-400 font-mono">
                               {warmDate}
                             </span>
                           </div>
                           
                           {update.location_description && (
-                            <div className="text-xs font-bold text-hprh-pine font-sans">
-                              <span className="font-mono text-[9px] uppercase tracking-wider text-hprh-pine/40 font-normal mr-1">Location:</span>
-                              {update.location_description}
+                            <div className="text-xs font-semibold text-slate-900 flex items-center gap-1.5">
+                              <MapPin className="w-3.5 h-3.5 text-sky-500 shrink-0" />
+                              <span>{update.location_description}</span>
                             </div>
                           )}
 
                           {update.note && (
-                            <p className="text-xs text-hprh-pine/70 leading-relaxed font-sans bg-hprh-paper/40 border border-hprh-pine/5 p-3 rounded">
+                            <p className="text-xs text-slate-600 leading-relaxed bg-slate-50 border border-slate-200/80 p-3 rounded-xl">
                               {update.note}
                             </p>
                           )}
@@ -262,14 +283,14 @@ export const Transport: React.FC = () => {
 
             {/* Delivery Celebration Banner */}
             {shipment.status === 'DELIVERED' && (
-              <div className="bg-hprh-sage/10 border border-hprh-sage/20 p-4 rounded text-xs flex items-start gap-3 mt-4 animate-in slide-in-from-bottom-2 duration-300">
-                <div className="p-2 bg-hprh-sage/20 text-hprh-sage rounded-full flex-shrink-0 animate-bounce">
+              <div className="bg-emerald-50 border border-emerald-200 p-5 rounded-2xl text-xs flex items-start gap-3 mt-4">
+                <div className="p-2.5 bg-emerald-100 text-emerald-700 rounded-xl shrink-0">
                   <Footprints className="w-5 h-5" />
                 </div>
-                <div className="space-y-1">
-                  <span className="font-mono uppercase font-bold text-hprh-pine block">Dossier Finalized</span>
-                  <p className="leading-relaxed font-sans text-hprh-pine/80">
-                    Safe arrival confirmed! your pet companion has been successfully delivered to the destination layout.
+                <div className="space-y-0.5">
+                  <span className="uppercase font-bold text-emerald-900 block text-xs">Safe Arrival Confirmed</span>
+                  <p className="leading-relaxed text-emerald-800">
+                    Your rescue companion has safely arrived at their destination. Thank you for making this journey possible!
                   </p>
                 </div>
               </div>

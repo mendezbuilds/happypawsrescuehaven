@@ -118,33 +118,33 @@ export const About: React.FC = () => {
   ].filter(link => link.url && link.url.trim() !== '');
 
   return (
-    <div className="py-16 bg-hprh-paper min-h-screen text-hprh-pine font-sans flex flex-col justify-between">
+    <div className="py-14 md:py-20 bg-slate-50 min-h-screen text-slate-900 font-sans flex flex-col justify-between">
       <Container className="space-y-16 flex-grow">
+        
         {/* Header Section */}
-        <div className="text-center max-w-3xl mx-auto space-y-6">
-          <div className="inline-flex items-center gap-1.5 font-mono text-xs uppercase tracking-widest text-hprh-sage font-bold">
-            <PawPrint className="w-4 h-4" />
+        <div className="text-center max-w-3xl mx-auto space-y-4">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-50 border border-indigo-100 text-xs font-semibold text-indigo-700 shadow-xs select-none">
+            <PawPrint className="w-3.5 h-3.5" />
             <span>Our Heritage & Dedication</span>
           </div>
 
-          <h1 className="text-4xl sm:text-6xl font-bold font-display text-hprh-pine leading-tight">
-            About Our Haven
+          <h1 className="text-4xl sm:text-6xl font-extrabold font-display tracking-tight text-slate-900 leading-tight">
+            About Rescue4paws
           </h1>
 
-          {/* Tasteful Established Badge */}
-          <div className="pt-2">
-            <span className="inline-block font-mono text-xs font-bold uppercase tracking-widest px-4 py-2 border border-hprh-pine/20 text-hprh-pine/70 bg-hprh-paper-dark rounded select-none shadow-sm">
-              Established December 4, 2015
+          <div className="pt-1">
+            <span className="inline-block text-xs font-semibold text-slate-600 bg-white border border-slate-200/90 px-4 py-1.5 rounded-full shadow-xs">
+              Established December 4, 2015 • Dedicated Foster Network
             </span>
           </div>
         </div>
 
         {/* Narrative & Visual Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center max-w-6xl mx-auto">
           {/* Narrative Text Column */}
-          <div className="lg:col-span-7 space-y-6 text-sm sm:text-base leading-relaxed text-hprh-pine/80 font-sans">
-            <p className="font-medium text-lg leading-relaxed text-hprh-pine">
-              Founded on December 4, 2015, Happy Paws Rescue Haven is dedicated to
+          <div className="lg:col-span-7 space-y-5 text-sm sm:text-base leading-relaxed text-slate-600 font-normal">
+            <p className="font-semibold text-lg leading-relaxed text-slate-900">
+              Founded on December 4, 2015, Rescue4paws is dedicated to
               giving homeless, abandoned, neglected, and at-risk animals a second
               chance at life. What began as a passion for helping vulnerable
               animals has grown into a mission-driven rescue organization focused
@@ -153,7 +153,7 @@ export const About: React.FC = () => {
             </p>
 
             <p>
-              At Happy Paws Rescue Haven, we believe that every animal deserves
+              At Rescue4paws, we believe that every animal deserves
               compassion, safety, and the opportunity to thrive. Through rescue
               efforts, foster placement support, adoption coordination, and
               community outreach, we work tirelessly to help animals find the
@@ -169,54 +169,46 @@ export const About: React.FC = () => {
             </p>
 
             <p>
-              Since our founding, we have helped countless animals on their journey
-              from uncertainty to security, thanks to the support of adopters,
-              fosters, volunteers, and animal lovers who share our vision.
-            </p>
-
-            <p>
               Whether you're looking to adopt, foster, volunteer, or support our
-              mission, we welcome you to become part of the Happy Paws Rescue Haven
+              mission, we welcome you to become part of the Rescue4paws
               family. Together, we can continue creating brighter futures for
               animals in need — one paw at a time.
             </p>
           </div>
 
-          {/* Polaroid Image Column */}
-          <div className="lg:col-span-5 flex justify-center items-center pt-4 lg:pt-0">
-            <div className="relative bg-white p-5 pb-10 border border-hprh-pine/10 shadow-2xl rotate-[-2deg] hover:rotate-0 transition-all duration-500 w-full max-w-[380px]">
-              {/* Polaroid photo frame */}
-              <div className="aspect-[4/3] bg-hprh-paper border border-hprh-pine/5 overflow-hidden relative mb-4">
+          {/* Visual Showcase Card */}
+          <div className="lg:col-span-5 flex justify-center items-center">
+            <div className="relative bg-white p-4 rounded-3xl border border-slate-200/90 shadow-2xl w-full max-w-[400px] overflow-hidden group">
+              <div className="aspect-[4/3] rounded-2xl overflow-hidden bg-slate-100 relative mb-4 shadow-inner">
                 <img
                   src="https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&q=80&w=800"
                   alt="Happy rescue dogs cuddling"
-                  className="w-full h-full object-cover filter contrast-[1.02] sepia-[0.02]"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
-                <div className="absolute top-2 right-2">
-                  <span className="inline-block font-mono text-[7px] font-bold uppercase tracking-widest px-1.5 py-0.5 border border-hprh-gold text-hprh-gold bg-hprh-gold/5 rounded-sm select-none shadow-sm">
+                <div className="absolute top-3 right-3">
+                  <span className="inline-block text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-white/90 backdrop-blur-md text-emerald-700 shadow-sm border border-emerald-500/20">
                     FAMILY FIRST
                   </span>
                 </div>
               </div>
-              {/* Polaroid caption */}
-              <div className="text-center font-display italic text-lg text-hprh-pine/80 tracking-wide">
-                A second chance at life...
+              <div className="text-center font-display italic text-base text-slate-700">
+                “A second chance at life and unconditional love...”
               </div>
             </div>
           </div>
         </div>
 
-        {/* Mission & Vision Section (Distinct Highlighted Cards) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto pt-4">
+        {/* Mission & Vision Section */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
           {/* Mission Card */}
-          <div className="bg-hprh-paper-dark border-l-4 border-l-hprh-sage border border-hprh-pine/10 rounded-xl p-8 space-y-4 hover:shadow-md transition-shadow duration-300">
-            <div className="flex items-center gap-3 text-hprh-sage">
-              <div className="w-10 h-10 rounded-full bg-hprh-sage/10 flex items-center justify-center">
-                <Shield className="w-5 h-5" />
+          <div className="bg-white border border-slate-200/90 rounded-3xl p-8 space-y-4 shadow-xs hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shadow-xs">
+                <Shield className="w-6 h-6" />
               </div>
-              <h3 className="font-display text-xl font-bold text-hprh-pine">Our Mission</h3>
+              <h3 className="font-display text-2xl font-bold text-slate-900">Our Mission</h3>
             </div>
-            <p className="text-sm leading-relaxed text-hprh-pine/80 font-sans">
+            <p className="text-sm leading-relaxed text-slate-600">
               To rescue, rehabilitate, and rehome animals in need while promoting
               compassion, responsible pet ownership, and lifelong human-animal
               bonds.
@@ -224,37 +216,37 @@ export const About: React.FC = () => {
           </div>
 
           {/* Vision Card */}
-          <div className="bg-hprh-paper-dark border-l-4 border-l-hprh-clay border border-hprh-pine/10 rounded-xl p-8 space-y-4 hover:shadow-md transition-shadow duration-300">
-            <div className="flex items-center gap-3 text-hprh-clay">
-              <div className="w-10 h-10 rounded-full bg-hprh-clay/10 flex items-center justify-center">
-                <Award className="w-5 h-5" />
+          <div className="bg-white border border-slate-200/90 rounded-3xl p-8 space-y-4 shadow-xs hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-sky-50 text-sky-600 flex items-center justify-center shadow-xs">
+                <Award className="w-6 h-6" />
               </div>
-              <h3 className="font-display text-xl font-bold text-hprh-pine">Our Vision</h3>
+              <h3 className="font-display text-2xl font-bold text-slate-900">Our Vision</h3>
             </div>
-            <p className="text-sm leading-relaxed text-hprh-pine/80 font-sans">
+            <p className="text-sm leading-relaxed text-slate-600">
               A world where every animal is valued, protected, and loved in a safe
-              and permanent home. 🐾
+              and permanent home, supported by a resilient community network.
             </p>
           </div>
         </div>
 
         {/* Social Media Links Section */}
-        <div className="border-t border-hprh-pine/10 pt-10 text-center max-w-3xl mx-auto space-y-6">
-          <div className="space-y-2">
-            <span className="block font-mono text-[10px] uppercase tracking-widest text-hprh-sage font-bold">
+        <div className="border-t border-slate-200/80 pt-10 text-center max-w-3xl mx-auto space-y-6">
+          <div className="space-y-1.5">
+            <span className="text-xs uppercase tracking-widest text-indigo-600 font-bold">
               Stay Connected
             </span>
-            <h3 className="font-display text-2xl font-bold text-hprh-pine">
+            <h3 className="font-display text-2xl font-bold text-slate-900">
               Follow Our Rescue Journey
             </h3>
           </div>
 
           {loadingSocials ? (
             <div className="flex justify-center items-center py-4">
-              <Loader2 className="w-6 h-6 animate-spin text-hprh-sage" />
+              <Loader2 className="w-6 h-6 animate-spin text-indigo-600" />
             </div>
           ) : activeSocialLinks.length === 0 ? (
-            <p className="text-xs text-hprh-pine/40 font-mono italic">
+            <p className="text-xs text-slate-400 font-mono italic">
               Social platforms coordinates coming soon.
             </p>
           ) : (
@@ -267,7 +259,7 @@ export const About: React.FC = () => {
                     href={social.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-hprh-pine/15 font-mono text-xs font-bold text-hprh-pine/80 transition-all shadow-sm ${social.color}`}
+                    className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-slate-200/90 text-xs font-semibold text-slate-800 bg-white transition-all shadow-xs hover:shadow-md hover:border-indigo-300 ${social.color}`}
                     title={`Follow us on ${social.name}`}
                   >
                     <IconComponent className="w-4 h-4" />

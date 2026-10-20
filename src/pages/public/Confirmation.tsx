@@ -9,7 +9,7 @@ export const Confirmation: React.FC = () => {
     <div className="py-20 bg-hprh-paper flex-grow flex items-center">
       <Container className="text-center space-y-6">
         <div className="font-mono text-xs uppercase tracking-widest text-hprh-sage">
-          Happy Paws Rescue Haven
+          Rescue4paws
         </div>
         <h1 className="text-3xl sm:text-5xl font-bold font-display text-hprh-pine">
           Adoption Confirmed

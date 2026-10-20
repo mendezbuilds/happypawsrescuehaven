@@ -79,7 +79,7 @@ export const processPayment = async ({
       name,
     },
     customizations: {
-      title: 'Happy Paws Rescue Haven',
+      title: 'Rescue4paws',
       description: 'Adoption Fee / Donation Payment',
       logo: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&q=80&w=200&h=200', // dog photo
     },

@@ -17,6 +17,15 @@ import {
   AlertTriangle 
 } from 'lucide-react';
 
+// Helper: Get today's date in YYYY-MM-DD format
+const getTodayDateString = () => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 // Form validation schema
 const petSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -37,6 +46,7 @@ const petSchema = z.object({
   spayed_neutered: z.boolean().default(false),
   microchipped: z.boolean().default(false),
   current_location: z.string().optional().nullable(),
+  intake_date: z.string().min(1, 'Please enter/select an intake date'),
 });
 
 type FormValues = z.infer<typeof petSchema>;
@@ -82,6 +92,7 @@ export const AdminPetForm: React.FC = () => {
       vaccinated: false,
       spayed_neutered: false,
       microchipped: false,
+      intake_date: getTodayDateString(),
     },
   });
 
@@ -122,6 +133,7 @@ export const AdminPetForm: React.FC = () => {
             spayed_neutered: data.spayed_neutered || false,
             microchipped: data.microchipped || false,
             current_location: data.current_location || '',
+            intake_date: data.intake_date || getTodayDateString(),
           });
 
           // Set existing photos
@@ -300,6 +312,7 @@ export const AdminPetForm: React.FC = () => {
         sex: values.sex,
         size: values.size,
         photos: photos,
+        intake_date: values.intake_date,
         // BACKWARD COMPATIBILITY double-writes:
         age: textAge,
         gender: genderCapitalized,
@@ -342,7 +355,6 @@ export const AdminPetForm: React.FC = () => {
         const generatedCaseNumber = `${prefix}${String(nextSeq).padStart(4, '0')}`;
         
         petPayload.case_number = generatedCaseNumber;
-        petPayload.intake_date = new Date().toISOString().split('T')[0];
 
         // Insert new pet
         const { error: insertError } = await supabase
@@ -454,7 +466,7 @@ export const AdminPetForm: React.FC = () => {
                 01. Intake Dossier Profile
               </h3>
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <Input
                   label="Animal Name"
                   placeholder="e.g. Barnaby"
@@ -467,6 +479,13 @@ export const AdminPetForm: React.FC = () => {
                   placeholder="e.g. Golden Retriever Mix"
                   error={errors.breed?.message}
                   {...register('breed')}
+                />
+
+                <Input
+                  label="Intake Date *"
+                  type="date"
+                  error={errors.intake_date?.message}
+                  {...register('intake_date')}
                 />
               </div>
 

@@ -7,31 +7,31 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 }
 
 /**
- * Shared Input form primitive with custom warm borders, focus ring,
- * and helper error messages for input fields.
+ * Shared Input form primitive with modern rounded-xl styling,
+ * smooth focus rings, and clear error / helper indicators.
  */
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ label, error, helperText, className = '', ...props }, ref) => {
     return (
       <div className="w-full flex flex-col gap-1.5">
         {label && (
-          <label className="text-xs uppercase tracking-wider text-hprh-pine/70 font-bold select-none">
+          <label className="text-xs font-semibold text-slate-700 select-none">
             {label}
           </label>
         )}
         <input
           ref={ref}
-          className={`bg-hprh-paper border-2 border-hprh-pine/15 focus:border-hprh-sage focus:ring-1 focus:ring-hprh-sage rounded px-3.5 py-2.5 text-sm text-hprh-pine font-sans placeholder-hprh-pine/40 transition-colors focus:outline-none ${
-            error ? 'border-hprh-clay focus:border-hprh-clay focus:ring-hprh-clay' : ''
+          className={`bg-slate-50 border border-slate-200 focus:border-indigo-600 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 rounded-xl px-4 py-3 text-sm text-slate-900 font-sans placeholder-slate-400 transition-all focus:outline-none ${
+            error ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-500/10 bg-rose-50/30' : ''
           } ${className}`}
           {...props}
         />
         {error ? (
-          <span className="text-[10px] text-hprh-clay uppercase tracking-wide font-semibold">
+          <span className="text-xs text-rose-600 font-medium">
             {error}
           </span>
         ) : helperText ? (
-          <span className="text-[10px] text-hprh-pine/50 uppercase tracking-wide font-semibold">
+          <span className="text-xs text-slate-500">
             {helperText}
           </span>
         ) : null}

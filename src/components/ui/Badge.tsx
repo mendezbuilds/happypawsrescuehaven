@@ -12,27 +12,14 @@ interface BadgeProps {
 export const Badge: React.FC<BadgeProps> = ({ status, className = '' }) => {
   const normalizedStatus = status.toUpperCase().trim();
 
-  const baseStyle = 'inline-block font-display text-[10px] sm:text-xs font-bold uppercase tracking-widest px-3 py-1 border-2 rounded-sm select-none transition-transform duration-300';
+  const baseStyle = 'inline-flex items-center gap-1.5 font-sans text-[11px] font-semibold tracking-wide px-3 py-1 rounded-full select-none transition-all duration-150';
   
-  let statusStyle = '';
-  let rotateStyle = 'rotate-[-1.5deg]'; // Default slight rotation
+  let statusStyle = 'text-slate-600 bg-slate-100 ring-1 ring-slate-200';
+  let dotColor = 'bg-slate-400';
 
-  // Group status mappings:
-  
-  // 1. Gold for Available and Pending/Action-needed
-  const goldStatuses = [
+  // 1. Success / Available / Active (Emerald)
+  const emeraldStatuses = [
     'AVAILABLE',
-    'PENDING',
-    'PENDING_REVIEW',
-    'SUBMITTED',
-    'ASSIGNED',
-    'DEPOSIT_PENDING',
-    'PREPARING',
-    'PENDING AUDIT'
-  ];
-
-  // 2. Sage for Success, Paid, Done, Approved
-  const sageStatuses = [
     'APPROVED',
     'CONFIRMED',
     'PAID',
@@ -46,8 +33,19 @@ export const Badge: React.FC<BadgeProps> = ({ status, className = '' }) => {
     'YES'
   ];
 
-  // 3. Clay for Attention Needed, Hold, Cancelled, Adopted, Rejected
-  const clayStatuses = [
+  // 2. Pending / Review (Sky / Indigo)
+  const pendingStatuses = [
+    'PENDING',
+    'PENDING_REVIEW',
+    'SUBMITTED',
+    'ASSIGNED',
+    'DEPOSIT_PENDING',
+    'PREPARING',
+    'PENDING AUDIT'
+  ];
+
+  // 3. Rose / Urgent / Closed (Rose)
+  const roseStatuses = [
     'REJECTED',
     'CANCELLED',
     'ON_HOLD',
@@ -56,26 +54,24 @@ export const Badge: React.FC<BadgeProps> = ({ status, className = '' }) => {
     'NO'
   ];
 
-  if (goldStatuses.includes(normalizedStatus)) {
-    statusStyle = 'text-hprh-gold border-hprh-gold/60 bg-hprh-gold/5';
-    rotateStyle = 'rotate-[1.5deg]';
-  } else if (sageStatuses.includes(normalizedStatus)) {
-    statusStyle = 'text-hprh-sage border-hprh-sage/60 bg-hprh-sage/5';
-    rotateStyle = 'rotate-[-1deg]';
-  } else if (clayStatuses.includes(normalizedStatus)) {
-    statusStyle = 'text-hprh-clay border-hprh-clay/60 bg-hprh-clay/5';
-    rotateStyle = 'rotate-[-2deg]';
+  if (emeraldStatuses.includes(normalizedStatus)) {
+    statusStyle = 'text-emerald-700 bg-emerald-50 ring-1 ring-emerald-600/20';
+    dotColor = 'bg-emerald-500 animate-pulse';
+  } else if (pendingStatuses.includes(normalizedStatus)) {
+    statusStyle = 'text-indigo-700 bg-indigo-50 ring-1 ring-indigo-600/20';
+    dotColor = 'bg-indigo-500';
+  } else if (roseStatuses.includes(normalizedStatus)) {
+    statusStyle = 'text-rose-700 bg-rose-50 ring-1 ring-rose-600/20';
+    dotColor = 'bg-rose-500';
   } else if (normalizedStatus === 'NOT_LISTED' || normalizedStatus === 'INACTIVE' || normalizedStatus === 'IN_FOSTER') {
-    statusStyle = 'text-hprh-pine/60 border-hprh-pine/35 bg-hprh-pine/5';
-    rotateStyle = 'rotate-[0.5deg]';
-  } else {
-    // Fallback: informational neutral
-    statusStyle = 'text-hprh-pine/60 border-hprh-pine/30 bg-hprh-pine/5';
+    statusStyle = 'text-sky-700 bg-sky-50 ring-1 ring-sky-600/20';
+    dotColor = 'bg-sky-500';
   }
 
   return (
-    <span className={`${baseStyle} ${statusStyle} ${rotateStyle} ${className}`}>
-      {status}
+    <span className={`${baseStyle} ${statusStyle} ${className}`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${dotColor}`}></span>
+      <span>{status}</span>
     </span>
   );
 };

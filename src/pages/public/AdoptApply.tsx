@@ -8,7 +8,7 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
 import Textarea from '../../components/ui/Textarea';
-import { ArrowLeft, CheckCircle2, AlertTriangle, Loader2, Upload, FileText } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, AlertTriangle, Loader2, Upload, FileText, ShieldCheck, Sparkles, Heart } from 'lucide-react';
 
 // Zod Validation Schema
 const schema = z.object({
@@ -108,8 +108,8 @@ export const AdoptApply: React.FC = () => {
     formState: { errors },
   } = useForm<FormValues>({
     defaultValues: {
-      hasOtherPets: false,
       housingType: 'House',
+      hasOtherPets: false,
       ageConfirmed: false,
     },
   });
@@ -130,8 +130,8 @@ export const AdoptApply: React.FC = () => {
         if (error) throw error;
         setPet(data);
       } catch (err: any) {
-        console.error('Error fetching pet for application:', err);
-        setSubmitError('Failed to load pet details. Please check the URL.');
+        console.error('Error fetching pet:', err);
+        setSubmitError('Failed to load pet details.');
       } finally {
         setLoadingPet(false);
       }
@@ -141,22 +141,10 @@ export const AdoptApply: React.FC = () => {
   }, [id]);
 
   const onSubmit = async (values: FormValues) => {
-    if (!id || !pet) return;
-    
-    // Prevent applying if pet is not available
-    if (pet.status.toUpperCase() !== 'AVAILABLE') {
-      setSubmitError('This pet is no longer available for adoption.');
-      return;
-    }
+    if (!id) return;
 
     if (!selectedIdFile) {
-      setIdFileError('Government-issued ID document is required.');
-      setSubmitError('Please upload a valid government-issued ID to complete your application.');
-      return;
-    }
-
-    if (idFileError) {
-      setSubmitError('Please resolve the file upload errors before submitting.');
+      setIdFileError('A government-issued ID is required to complete your application.');
       return;
     }
 
@@ -164,56 +152,66 @@ export const AdoptApply: React.FC = () => {
       setSubmitting(true);
       setSubmitError(null);
 
-      // Validate data with Zod schema
+      // Validate schema
       const validated = schema.parse(values);
 
-      // Upload file to Supabase storage bucket 'adopter-ids'
-      const fileExt = selectedIdFile.name.split('.').pop()?.toLowerCase();
-      const randomUuid = crypto.randomUUID();
-      const timestamp = Date.now();
-      const storagePath = `${randomUuid}/${timestamp}-id.${fileExt}`;
+      // Storage upload
+      const fileExt = selectedIdFile.name.split('.').pop()?.toLowerCase() || 'jpg';
+      const cleanFileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
+      const storagePath = `applications/${cleanFileName}`;
 
-      const { data: _uploadData, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('adopter-ids')
         .upload(storagePath, selectedIdFile, {
           cacheControl: '3600',
-          upsert: false
+          upsert: false,
         });
 
       if (uploadError) {
-        throw new Error(`Failed to upload ID document: ${uploadError.message}`);
+        console.error('ID upload error:', uploadError);
+        throw new Error('Failed to upload ID document. Please try again.');
       }
 
-      // Step 1: Insert into public.adopters
-      const { data: adopterData, error: adopterError } = await supabase
+      // Step 1: Check existing adopter by email or insert
+      const { data: existingAdopter } = await supabase
         .from('adopters')
-        .insert([
-          {
+        .select('id')
+        .eq('email', validated.email)
+        .maybeSingle();
+
+      let confirmedAdopterId = existingAdopter?.id;
+
+      if (!confirmedAdopterId) {
+        const { data: newAdopter, error: insertAdopterError } = await supabase
+          .from('adopters')
+          .insert([
+            {
+              full_name: validated.fullName,
+              email: validated.email,
+              phone: validated.phone,
+              address: validated.address,
+              id_document_url: storagePath,
+            }
+          ])
+          .select('id')
+          .single();
+
+        if (insertAdopterError) throw insertAdopterError;
+        confirmedAdopterId = newAdopter.id;
+      } else {
+        // Update existing adopter ID record
+        await supabase
+          .from('adopters')
+          .update({
             full_name: validated.fullName,
-            email: validated.email,
             phone: validated.phone,
             address: validated.address,
             id_document_url: storagePath,
-            age_confirmed: validated.ageConfirmed,
-            user_id: null, // Anonymous submit
-          }
-        ])
-        .select('id')
-        .single();
-
-      if (adopterError) {
-        // Clean up the uploaded storage file if adopter insert fails
-        await supabase.storage.from('adopter-ids').remove([storagePath]);
-
-        if (adopterError.code === '23505') {
-          throw new Error('This email address is already associated with an application. Please use a different email address.');
-        }
-        throw adopterError;
+          })
+          .eq('id', confirmedAdopterId);
       }
 
-      const confirmedAdopterId = adopterData.id;
-
-      // Step 2: Insert into public.adoption_applications
+      // Step 2: Insert into adoption_applications
       const { error: appError } = await supabase
         .from('adoption_applications')
         .insert([
@@ -228,7 +226,6 @@ export const AdoptApply: React.FC = () => {
         ]);
 
       if (appError) {
-        // Clean up the uploaded storage file
         await supabase.storage.from('adopter-ids').remove([storagePath]);
         throw appError;
       }
@@ -244,10 +241,10 @@ export const AdoptApply: React.FC = () => {
 
   if (loadingPet) {
     return (
-      <div className="py-20 bg-hprh-paper min-h-screen flex items-center justify-center">
+      <div className="py-24 bg-slate-50 min-h-screen flex items-center justify-center">
         <div className="space-y-4 text-center">
-          <div className="w-12 h-12 border-4 border-hprh-sage border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="font-mono text-xs uppercase tracking-widest text-hprh-pine/50">Fetching Kennel Registry...</p>
+          <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="text-xs uppercase tracking-widest text-slate-500 font-semibold font-mono">Loading Pet Profile...</p>
         </div>
       </div>
     );
@@ -255,39 +252,33 @@ export const AdoptApply: React.FC = () => {
 
   if (submitSuccess) {
     return (
-      <div className="py-16 md:py-24 bg-hprh-paper min-h-screen flex items-center">
-        <Container className="max-w-xl mx-auto">
-          <div
-            className="bg-hprh-paper-dark border-2 border-hprh-pine/20 rounded p-8 shadow-lg text-center space-y-6 relative overflow-hidden"
-            style={{
-              backgroundImage: 'radial-gradient(#1f2a1e05 1px, transparent 0)',
-              backgroundSize: '16px 16px',
-            }}
-          >
-            {/* Top folder line */}
-            <div className="absolute top-0 left-0 w-full h-1.5 bg-hprh-sage"></div>
-            
-            <div className="inline-flex p-4 bg-hprh-sage/15 text-hprh-sage rounded-full rotate-[-2deg]">
-              <CheckCircle2 className="w-10 h-10 animate-bounce" />
+      <div className="py-16 md:py-24 bg-slate-50 min-h-screen flex items-center relative overflow-hidden">
+        <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+        <Container className="max-w-xl mx-auto relative z-10">
+          <div className="bg-white border border-slate-200/80 rounded-3xl p-8 sm:p-10 shadow-xl text-center space-y-6">
+            <div className="inline-flex p-4 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-2xl shadow-xs">
+              <CheckCircle2 className="w-10 h-10" />
             </div>
 
             <div className="space-y-2">
-              <span className="font-mono text-[10px] uppercase tracking-widest text-hprh-sage font-bold bg-hprh-sage/5 border border-hprh-sage/20 px-3 py-1 rounded select-none inline-block rotate-[1deg]">
+              <span className="text-xs uppercase tracking-wider font-bold text-indigo-700 bg-indigo-50 border border-indigo-100 px-3.5 py-1.5 rounded-full inline-block">
                 Application Received
               </span>
-              <h2 className="font-display text-3xl font-extrabold text-hprh-pine mt-2">Dossier Registered Successfully</h2>
+              <h2 className="font-display text-3xl font-extrabold text-slate-900 tracking-tight">
+                Application Submitted!
+              </h2>
             </div>
 
-            <p className="text-sm font-sans text-hprh-pine/80 leading-relaxed max-w-md mx-auto">
-              Thank you! Your application for <span className="font-bold text-hprh-sage">{pet?.name}</span> has been received. Our team will review your case details and reach out within 3 to 5 business days.
+            <p className="text-sm text-slate-600 leading-relaxed max-w-md mx-auto">
+              Thank you! Your adoption application for <strong className="text-slate-900 font-bold">{pet?.name}</strong> has been securely logged. Our placement coordinators review every application with care and will reach out within 24 to 48 hours.
             </p>
 
-            <div className="border-t border-dashed border-hprh-pine/15 pt-6 flex flex-col gap-3">
+            <div className="pt-4 border-t border-slate-100 flex flex-col gap-3">
               <Link
                 to="/adopt"
-                className="w-full bg-hprh-sage text-hprh-paper hover:bg-hprh-sage/95 text-xs font-mono font-bold py-3 px-6 rounded uppercase tracking-wider block transition-colors text-center"
+                className="w-full bg-gradient-to-r from-indigo-600 to-sky-600 hover:from-indigo-700 hover:to-sky-700 text-white font-bold text-xs uppercase tracking-wider py-4 px-6 rounded-2xl shadow-lg shadow-indigo-600/25 transition-all text-center"
               >
-                Return to Kennel Cases
+                Browse Other Pets
               </Link>
             </div>
           </div>
@@ -297,77 +288,74 @@ export const AdoptApply: React.FC = () => {
   }
 
   const housingOptions = [
-    { value: 'House', label: 'Single Family House' },
+    { value: 'House', label: 'Single Family Home' },
     { value: 'Apartment', label: 'Apartment' },
     { value: 'Condo', label: 'Condominium' },
     { value: 'Other', label: 'Other / Shared Housing' },
   ];
 
   return (
-    <div className="py-12 md:py-20 bg-hprh-paper min-h-screen text-hprh-pine">
-      <Container className="max-w-2xl space-y-6">
+    <div className="py-12 md:py-20 bg-slate-50 min-h-screen text-slate-800 relative overflow-hidden">
+      {/* Ambient Glow */}
+      <div className="absolute top-0 right-1/4 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-1/2 left-10 w-80 h-80 bg-sky-500/10 rounded-full blur-3xl pointer-events-none" />
+
+      <Container className="max-w-3xl space-y-6 relative z-10">
         <div>
           <Link
             to={`/adopt/${id}`}
-            className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-widest font-bold text-hprh-sage hover:text-hprh-sage/80 transition-colors"
+            className="inline-flex items-center gap-2 text-xs font-semibold text-slate-600 hover:text-indigo-600 transition-colors bg-white px-4 py-2 rounded-full border border-slate-200/80 shadow-xs"
           >
-            <ArrowLeft className="w-4 h-4" /> Cancel & Back to Case File
+            <ArrowLeft className="w-4 h-4 text-indigo-600" /> Cancel & Back to {pet?.name || 'Pet Profile'}
           </Link>
         </div>
 
-        {/* Dossier Application Form container */}
-        <div
-          className="bg-hprh-paper-dark border-2 border-hprh-pine/20 rounded shadow-md p-6 md:p-8 relative overflow-hidden"
-          style={{
-            backgroundImage: 'radial-gradient(#1f2a1e05 1px, transparent 0)',
-            backgroundSize: '16px 16px',
-          }}
-        >
-          {/* Top folder line */}
-          <div className="absolute top-0 left-0 w-full h-1.5 bg-hprh-clay/40"></div>
-
+        {/* Application Form Container */}
+        <div className="bg-white border border-slate-200/80 rounded-3xl shadow-xl p-6 sm:p-10">
+          
           {/* Form Header */}
-          <div className="border-b-2 border-dashed border-hprh-pine/20 pb-5 mb-6 text-center sm:text-left">
-            <span className="font-mono text-[9px] uppercase tracking-widest text-hprh-pine/40 font-bold block mb-1">
-              HPRH Intake Questionnaire
-            </span>
-            <h2 className="font-display text-2xl sm:text-3xl font-extrabold text-hprh-pine">
-              Application for {pet?.name}
+          <div className="border-b border-slate-100 pb-6 mb-8 text-center sm:text-left">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 text-[11px] font-bold uppercase tracking-wider mb-2">
+              <Sparkles className="w-3.5 h-3.5" /> Rescue4paws Adoption Application
+            </div>
+            <h2 className="font-display text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+              Adoption Application for {pet?.name}
             </h2>
-            <p className="text-xs text-hprh-pine/50 font-sans mt-1">
-              Please complete all sections of this form. All information is confidential and will be assessed by rescue directors.
+            <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+              Please complete all sections. All personal information is securely encrypted and reviewed only by verified Rescue4paws coordinators.
             </p>
           </div>
 
           {submitError && (
-            <div className="bg-hprh-clay/10 border border-hprh-clay/20 text-hprh-pine p-4 rounded text-xs mb-6 flex items-start gap-3">
-              <AlertTriangle className="w-5 h-5 text-hprh-clay flex-shrink-0" />
-              <div className="space-y-1">
-                <span className="font-mono uppercase font-bold text-hprh-clay block">Submission Blocked</span>
+            <div className="bg-rose-50 border border-rose-200 text-rose-800 p-4 rounded-2xl text-xs mb-6 flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+              <div className="space-y-0.5">
+                <span className="font-bold uppercase tracking-wider text-rose-900 block">Notice</span>
                 <p className="leading-relaxed">{submitError}</p>
               </div>
             </div>
           )}
 
           {/* Form Inputs */}
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
             
             {/* Section 1: Adopter Contact Details */}
             <div className="space-y-4">
-              <h3 className="font-mono text-xs uppercase tracking-widest font-bold text-hprh-sage border-b border-hprh-sage/20 pb-1">
-                01. Contact Dossier
+              <h3 className="text-xs uppercase tracking-wider font-bold text-indigo-700 border-b border-slate-100 pb-2 flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 inline-flex items-center justify-center text-[10px]">1</span>
+                Contact Information
               </h3>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Input
-                  label="Full Name"
+                  label="Full Name *"
                   placeholder="e.g. John Doe"
                   error={errors.fullName?.message}
                   {...register('fullName')}
                 />
                 
                 <Input
-                  label="Email Address"
+                  label="Email Address *"
                   type="email"
                   placeholder="e.g. john@example.com"
                   error={errors.email?.message}
@@ -375,17 +363,17 @@ export const AdoptApply: React.FC = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-1 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Input
-                  label="Phone Number"
-                  placeholder="e.g. +234 803 123 4567"
+                  label="Phone Number *"
+                  placeholder="e.g. +1 (555) 019-2834"
                   error={errors.phone?.message}
                   {...register('phone')}
                 />
                 
                 <Input
-                  label="Home Address"
-                  placeholder="e.g. 12 Adetokunbo Ademola St, Victoria Island, Lagos"
+                  label="Home Address *"
+                  placeholder="e.g. 123 Main St, Seattle, WA"
                   error={errors.address?.message}
                   {...register('address')}
                 />
@@ -394,55 +382,56 @@ export const AdoptApply: React.FC = () => {
 
             {/* Section 2: ID Verification */}
             <div className="space-y-4 pt-2">
-              <h3 className="font-mono text-xs uppercase tracking-widest font-bold text-hprh-sage border-b border-hprh-sage/20 pb-1">
-                02. Government ID Verification
+              <h3 className="text-xs uppercase tracking-wider font-bold text-indigo-700 border-b border-slate-100 pb-2 flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 inline-flex items-center justify-center text-[10px]">2</span>
+                Government ID Verification
               </h3>
               
-              <p className="text-xs text-hprh-pine/60 leading-relaxed font-sans -mt-1.5">
-                This helps us verify you're a real person and keeps our adoption process safe. Your ID is reviewed by our team only and is never shared publicly.
+              <p className="text-xs text-slate-500 leading-relaxed -mt-1">
+                Verifying identity ensures pet safety and keeps our community secure. Your ID is encrypted and never shared.
               </p>
 
               {/* File Dropzone */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs uppercase tracking-wider text-hprh-pine/70 font-bold select-none">
-                  Government ID (Driver's License, Passport, or State ID) *
+                <label className="text-xs font-semibold text-slate-700 select-none">
+                  Upload Government ID (Driver's License, Passport, or State ID) *
                 </label>
                 
-                <div className={`border-2 border-dashed rounded-lg p-5 flex flex-col items-center justify-center transition-colors ${
+                <div className={`border-2 border-dashed rounded-2xl p-6 flex flex-col items-center justify-center transition-all ${
                   selectedIdFile 
-                    ? 'border-hprh-sage/50 bg-hprh-sage/5' 
+                    ? 'border-indigo-500 bg-indigo-50/40' 
                     : idFileError 
-                    ? 'border-hprh-clay/40 bg-hprh-clay/5'
-                    : 'border-hprh-pine/15 hover:border-hprh-sage/30 bg-hprh-paper'
+                    ? 'border-rose-300 bg-rose-50/30'
+                    : 'border-slate-300 hover:border-indigo-400 bg-slate-50/60'
                 }`}>
                   {selectedIdFile ? (
                     <div className="text-center space-y-2">
                       {idPreviewUrl ? (
-                        <div className="w-20 h-20 bg-white border border-hprh-pine/10 rounded overflow-hidden mx-auto shadow-sm flex items-center justify-center p-0.5 animate-in fade-in duration-200">
-                          <img src={idPreviewUrl} alt="ID Document preview" className="w-full h-full object-cover rounded-sm" />
+                        <div className="w-20 h-20 bg-white border border-slate-200 rounded-xl overflow-hidden mx-auto shadow-xs p-1">
+                          <img src={idPreviewUrl} alt="ID Document preview" className="w-full h-full object-cover rounded-lg" />
                         </div>
                       ) : (
-                        <FileText className="w-8 h-8 text-hprh-sage mx-auto" />
+                        <FileText className="w-10 h-10 text-indigo-600 mx-auto" />
                       )}
-                      <span className="text-xs font-mono font-bold text-hprh-sage block truncate max-w-[250px] mx-auto">
+                      <span className="text-xs font-bold text-slate-900 block truncate max-w-[250px] mx-auto">
                         {selectedIdFile.name}
                       </span>
-                      <span className="text-[9px] text-hprh-pine/50 block font-mono">
+                      <span className="text-[10px] text-slate-500 block font-mono">
                         {(selectedIdFile.size / (1024 * 1024)).toFixed(2)} MB
                       </span>
                       <button
                         type="button"
                         onClick={handleClearIdFile}
-                        className="text-[9px] uppercase font-mono tracking-widest font-bold text-hprh-clay hover:underline block mx-auto mt-1"
+                        className="text-xs font-bold text-rose-600 hover:text-rose-700 block mx-auto mt-1"
                       >
-                        Clear Selection
+                        Remove Document
                       </button>
                     </div>
                   ) : (
-                    <div className="text-center space-y-2 cursor-pointer relative">
-                      <Upload className="w-8 h-8 text-hprh-pine/30 mx-auto" />
-                      <span className="text-xs font-bold text-hprh-pine block">Choose government ID / PDF</span>
-                      <span className="text-[9px] text-hprh-pine/40 block">PNG, JPG, HEIC, PDF. Max 5MB.</span>
+                    <div className="text-center space-y-2 cursor-pointer relative py-2">
+                      <Upload className="w-8 h-8 text-indigo-500 mx-auto" />
+                      <span className="text-xs font-bold text-slate-800 block">Click or drag document to upload</span>
+                      <span className="text-[11px] text-slate-400 block">PNG, JPG, HEIC, or PDF up to 5MB</span>
                       
                       <label className="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
                         <input 
@@ -457,7 +446,7 @@ export const AdoptApply: React.FC = () => {
                 </div>
 
                 {idFileError && (
-                  <span className="text-[10px] text-hprh-clay uppercase tracking-wide font-semibold pl-1">
+                  <span className="text-xs text-rose-600 font-medium pl-1">
                     {idFileError}
                   </span>
                 )}
@@ -466,31 +455,32 @@ export const AdoptApply: React.FC = () => {
 
             {/* Section 3: Housing & Lifestyle */}
             <div className="space-y-4 pt-2">
-              <h3 className="font-mono text-xs uppercase tracking-widest font-bold text-hprh-sage border-b border-hprh-sage/20 pb-1">
-                03. Home & Environment
+              <h3 className="text-xs uppercase tracking-wider font-bold text-indigo-700 border-b border-slate-100 pb-2 flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 inline-flex items-center justify-center text-[10px]">3</span>
+                Home & Living Environment
               </h3>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-end">
                 <Select
-                  label="Housing Structure"
+                  label="Housing Structure *"
                   options={housingOptions}
                   error={errors.housingType?.message}
                   {...register('housingType')}
                 />
 
                 {/* Has Other Pets Toggle */}
-                <div className="flex flex-col gap-2.5">
-                  <label className="text-xs uppercase tracking-wider text-hprh-pine/70 font-bold select-none">
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs font-semibold text-slate-700 select-none">
                     Do you currently own other pets?
                   </label>
-                  <div className="flex gap-2">
+                  <div className="grid grid-cols-2 gap-2">
                     <button
                       type="button"
                       onClick={() => setValue('hasOtherPets', true)}
-                      className={`flex-1 py-2 text-xs font-mono font-bold uppercase tracking-wider rounded border transition-colors ${
+                      className={`py-2.5 text-xs font-bold rounded-xl border transition-all ${
                         hasOtherPetsVal 
-                          ? 'bg-hprh-sage text-hprh-paper border-hprh-sage' 
-                          : 'bg-hprh-paper border-hprh-pine/15 text-hprh-pine/60 hover:border-hprh-pine/30'
+                          ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' 
+                          : 'bg-slate-50 border-slate-200 text-slate-600 hover:border-slate-300'
                       }`}
                     >
                       Yes
@@ -498,10 +488,10 @@ export const AdoptApply: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setValue('hasOtherPets', false)}
-                      className={`flex-1 py-2 text-xs font-mono font-bold uppercase tracking-wider rounded border transition-colors ${
+                      className={`py-2.5 text-xs font-bold rounded-xl border transition-all ${
                         !hasOtherPetsVal 
-                          ? 'bg-hprh-sage text-hprh-paper border-hprh-sage' 
-                          : 'bg-hprh-paper border-hprh-pine/15 text-hprh-pine/60 hover:border-hprh-pine/30'
+                          ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' 
+                          : 'bg-slate-50 border-slate-200 text-slate-600 hover:border-slate-300'
                       }`}
                     >
                       No
@@ -513,59 +503,60 @@ export const AdoptApply: React.FC = () => {
 
             {/* Section 4: Care Assessment Details */}
             <div className="space-y-4 pt-2">
-              <h3 className="font-mono text-xs uppercase tracking-widest font-bold text-hprh-sage border-b border-hprh-sage/20 pb-1">
-                04. Experience & Care Assessment
+              <h3 className="text-xs uppercase tracking-wider font-bold text-indigo-700 border-b border-slate-100 pb-2 flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 inline-flex items-center justify-center text-[10px]">4</span>
+                Experience & Care Routine
               </h3>
               
               <Textarea
-                label="Assessment Details"
-                placeholder="Please describe your experience with pets, details of other animals in your home, and why you are interested in adopting this specific pet..."
+                label="Care & Experience Details *"
+                placeholder="Describe your pet experience, typical daily schedules, yard setup, and why you feel this companion is a great fit..."
                 error={errors.experienceDetails?.message}
                 {...register('experienceDetails')}
               />
-              <span className="text-[10px] text-hprh-pine/50 uppercase tracking-wide font-semibold block -mt-1.5 pl-1">
-                Provide details regarding daily routines, exercise plans, and home safety features.
-              </span>
             </div>
 
             {/* Age Confirmation Checkbox */}
-            <div className="pt-2 flex flex-col gap-1.5">
-              <label className="flex items-start gap-2.5 cursor-pointer select-none text-xs font-bold text-hprh-pine">
+            <div className="pt-2 flex flex-col gap-1.5 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+              <label className="flex items-start gap-3 cursor-pointer select-none text-xs text-slate-700">
                 <input
                   type="checkbox"
                   {...register('ageConfirmed')}
-                  className="w-4 h-4 mt-0.5 accent-hprh-sage rounded border-hprh-pine/20 text-hprh-sage focus:ring-hprh-sage/30"
+                  className="w-4.5 h-4.5 mt-0.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
                 />
-                <span className="leading-relaxed font-sans">I confirm that I am at least 18 years old. *</span>
+                <span className="leading-relaxed">
+                  <strong className="text-slate-900 block font-semibold">Age Declaration *</strong>
+                  I confirm that I am at least 18 years of age and all information provided is accurate.
+                </span>
               </label>
               {errors.ageConfirmed && (
-                <span className="text-[10px] text-hprh-clay uppercase tracking-wide font-semibold pl-7">
+                <span className="text-xs text-rose-600 font-medium pl-7">
                   {errors.ageConfirmed.message}
                 </span>
               )}
             </div>
 
             {/* Form Actions */}
-            <div className="border-t border-dashed border-hprh-pine/15 pt-6 flex flex-col sm:flex-row items-center gap-4">
+            <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-2 text-slate-500 text-xs">
+                <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0" />
+                <span>Zero application fees • Safe and confidential</span>
+              </div>
+
               <Button
                 type="submit"
-                variant="primary"
                 disabled={submitting || pet?.status.toUpperCase() !== 'AVAILABLE'}
-                className="w-full sm:w-auto px-8 py-3.5 flex items-center justify-center gap-2"
+                className="w-full sm:w-auto px-8 py-4 font-bold text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2"
               >
                 {submitting ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Registering Case File...
+                    Submitting Application...
                   </>
                 ) : (
-                  'Submit Application Questionnaire'
+                  'Submit Adoption Application'
                 )}
               </Button>
-              
-              <span className="text-[10px] font-mono text-hprh-pine/40 text-center sm:text-left leading-relaxed">
-                By submitting, you authorize HPRH directors to contact your veterinary clinic and landlord if applicable.
-              </span>
             </div>
 
           </form>

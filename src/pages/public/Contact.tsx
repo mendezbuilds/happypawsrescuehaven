@@ -13,7 +13,9 @@ import {
   Send, 
   CheckCircle2, 
   AlertTriangle,
-  Clock
+  Clock,
+  Sparkles,
+  MessageSquare
 } from 'lucide-react';
 
 export const Contact: React.FC = () => {
@@ -50,8 +52,8 @@ export const Contact: React.FC = () => {
         if (fetchError) throw fetchError;
 
         const info = {
-          phone: '+1 (XXX) XXX-XXXX',
-          email: 'support@happypawsrescuehaven.com',
+          phone: '+1 (555) 737-2834',
+          email: 'support@rescue4paws.org',
           address: 'Grand Rapids, MI 49503'
         };
 
@@ -67,8 +69,8 @@ export const Contact: React.FC = () => {
         console.error('Error fetching contact info from settings:', err);
         // Fallback defaults in case of network/db issues
         setContactInfo({
-          phone: '+1 (XXX) XXX-XXXX',
-          email: 'support@happypawsrescuehaven.com',
+          phone: '+1 (555) 737-2834',
+          email: 'support@rescue4paws.org',
           address: 'Grand Rapids, MI 49503'
         });
       } finally {
@@ -145,56 +147,65 @@ export const Contact: React.FC = () => {
   };
 
   return (
-    <div className="py-16 bg-hprh-paper min-h-[85vh] flex-grow flex items-center text-hprh-pine">
-      <Container className="max-w-6xl space-y-12">
+    <div className="py-12 md:py-20 bg-slate-50 min-h-screen text-slate-800 relative overflow-hidden">
+      {/* Ambient Aurora Orbs */}
+      <div className="absolute top-0 right-1/4 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-1/2 left-10 w-80 h-80 bg-sky-500/10 rounded-full blur-3xl pointer-events-none" />
+
+      <Container className="max-w-6xl space-y-12 relative z-10">
         {/* Header Section */}
-        <div className="text-center max-w-2xl mx-auto space-y-4">
-          <span className="font-mono text-xs uppercase tracking-widest text-hprh-sage font-bold block">
-            Rescue Correspondence
-          </span>
-          <h1 className="text-3xl sm:text-5xl font-bold font-display text-hprh-pine">
-            Contact Rescue Care
+        <div className="text-center max-w-2xl mx-auto space-y-3">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-bold uppercase tracking-wider">
+            <MessageSquare className="w-4 h-4 text-indigo-600" />
+            Get in Touch
+          </div>
+          <h1 className="text-3xl sm:text-5xl font-extrabold font-display text-slate-900 tracking-tight">
+            Connect With Rescue4paws
           </h1>
-          <p className="text-sm font-sans text-hprh-pine/70 leading-relaxed">
-            Have questions about our adoption process, volunteer programs, or a pet in our care? 
-            Fill out the form below and our volunteer staff will get back to you as soon as possible.
+          <p className="text-sm text-slate-500 leading-relaxed">
+            Have questions about our adoption process, volunteer programs, foster opportunities, or need assistance? Our coordination team is here to help.
           </p>
         </div>
 
         {/* Content Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-start">
           {/* Form Column */}
-          <div className="lg:col-span-7 bg-white p-6 sm:p-8 border border-hprh-pine/15 rounded-lg shadow-sm relative overflow-hidden">
+          <div className="lg:col-span-7 bg-white p-6 sm:p-10 border border-slate-200/80 rounded-3xl shadow-xl">
             {submitSuccess ? (
-              <div className="py-10 text-center space-y-6 animate-in fade-in zoom-in-95 duration-300">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-hprh-sage/10 text-hprh-sage mb-2">
-                  <CheckCircle2 className="w-10 h-10" />
+              <div className="py-12 text-center space-y-6 animate-in fade-in zoom-in-95 duration-300">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-100 shadow-xs mb-2">
+                  <CheckCircle2 className="w-8 h-8" />
                 </div>
-                <h3 className="font-display text-2xl font-bold text-hprh-pine">
-                  Submission Received
+                <h3 className="font-display text-2xl font-bold text-slate-900">
+                  Message Dispatched Successfully
                 </h3>
-                <p className="text-sm text-hprh-pine/70 max-w-md mx-auto leading-relaxed">
-                  Thanks for reaching out! We'll get back to you soon.
+                <p className="text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
+                  Thank you for reaching out to Rescue4paws. A dedicated coordinator will review your note and respond within 24 business hours.
                 </p>
                 <Button 
                   onClick={() => setSubmitSuccess(false)}
-                  variant="ghost" 
-                  className="font-mono font-bold"
+                  variant="outline"
+                  className="rounded-full px-6 py-2.5 text-xs font-semibold"
                 >
-                  Send another message
+                  Send Another Message
                 </Button>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-5">
-                <h3 className="font-display text-xl font-bold text-hprh-pine border-b border-hprh-pine/10 pb-3">
-                  Submit a Message
-                </h3>
+                <div className="border-b border-slate-100 pb-4">
+                  <h3 className="font-display text-xl font-bold text-slate-900">
+                    Send Us a Message
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Fill in the details below and we'll route your inquiry to the appropriate department.
+                  </p>
+                </div>
 
                 {error && (
-                  <div className="bg-hprh-clay/10 border border-hprh-clay/20 text-hprh-pine p-4 rounded text-xs flex items-start gap-3">
-                    <AlertTriangle className="w-5 h-5 text-hprh-clay flex-shrink-0" />
-                    <div className="space-y-1">
-                      <span className="font-mono uppercase font-bold text-hprh-clay block">Submission Error</span>
+                  <div className="bg-rose-50 border border-rose-200 text-rose-800 p-4 rounded-2xl text-xs flex items-start gap-3">
+                    <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                    <div className="space-y-0.5">
+                      <span className="font-bold uppercase tracking-wider text-rose-900 block">Notice</span>
                       <p className="leading-relaxed">{error}</p>
                     </div>
                   </div>
@@ -233,7 +244,7 @@ export const Contact: React.FC = () => {
                   />
 
                   <Select
-                    label="Topic / Subject *"
+                    label="Topic / Department *"
                     value={subject}
                     onChange={(e) => setSubject(e.target.value)}
                     disabled={submitting}
@@ -241,14 +252,15 @@ export const Contact: React.FC = () => {
                       { value: 'General Inquiry', label: 'General Inquiry' },
                       { value: 'Adoption Question', label: 'Adoption Question' },
                       { value: 'Volunteer Inquiry', label: 'Volunteer Inquiry' },
-                      { value: 'Fostering Inquiry', label: 'Fostering Inquiry' }
+                      { value: 'Fostering Inquiry', label: 'Fostering Inquiry' },
+                      { value: 'Donation & Sponsorship', label: 'Donation & Sponsorship' }
                     ]}
                   />
                 </div>
 
                 <Textarea
-                  label="Your Message *"
-                  placeholder="Type your message details here..."
+                  label="Message *"
+                  placeholder="Tell us how we can assist you..."
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   rows={5}
@@ -259,16 +271,16 @@ export const Contact: React.FC = () => {
                 <Button
                   type="submit"
                   disabled={submitting}
-                  className="w-full sm:w-auto font-mono uppercase tracking-wider py-3.5 px-8 flex items-center justify-center gap-2 shadow"
+                  className="w-full sm:w-auto font-bold text-xs uppercase tracking-wider py-4 px-8 rounded-full shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2"
                 >
                   {submitting ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Submitting...</span>
+                      <span>Sending Message...</span>
                     </>
                   ) : (
                     <>
-                      <Send className="w-3.5 h-3.5" />
+                      <Send className="w-4 h-4" />
                       <span>Send Message</span>
                     </>
                   )}
@@ -280,32 +292,31 @@ export const Contact: React.FC = () => {
           {/* Contact Info Column */}
           <div className="lg:col-span-5 space-y-6">
             {/* Display Info Card */}
-            <div className="bg-hprh-paper-dark border border-hprh-pine/15 rounded-lg p-6 sm:p-8 space-y-6 shadow-sm relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-1.5 h-full bg-hprh-sage"></div>
-              
-              <h3 className="font-display text-xl font-bold text-hprh-pine border-b border-hprh-pine/10 pb-3">
-                Rescue Contact Directory
+            <div className="bg-white border border-slate-200/80 rounded-3xl p-6 sm:p-8 space-y-6 shadow-xl">
+              <h3 className="font-display text-xl font-bold text-slate-900 border-b border-slate-100 pb-3 flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-indigo-600" />
+                Contact Directory
               </h3>
 
               {loadingInfo ? (
                 <div className="py-8 flex flex-col items-center justify-center gap-2.5">
-                  <Loader2 className="w-6 h-6 animate-spin text-hprh-sage" />
-                  <span className="font-mono text-[10px] uppercase tracking-wider text-hprh-pine/50">
-                    Loading directory info...
+                  <Loader2 className="w-6 h-6 animate-spin text-indigo-600" />
+                  <span className="text-xs uppercase tracking-wider text-slate-400 font-mono">
+                    Loading directory...
                   </span>
                 </div>
               ) : (
-                <div className="space-y-5 font-sans text-sm">
+                <div className="space-y-5 text-sm">
                   {/* Phone Item */}
                   <div className="flex gap-4 items-start">
-                    <div className="p-2.5 bg-white border border-hprh-pine/10 rounded-md shadow-sm text-hprh-sage flex-shrink-0">
+                    <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-2xl text-indigo-600 shrink-0">
                       <Phone className="w-5 h-5" />
                     </div>
                     <div className="space-y-0.5">
-                      <span className="font-mono text-[10px] uppercase tracking-wider text-hprh-pine/40 font-bold block">
-                        Phone Number
+                      <span className="text-[10px] uppercase tracking-wider text-slate-400 font-bold block">
+                        Direct Phone
                       </span>
-                      <span className="font-semibold text-hprh-pine block text-base">
+                      <span className="font-bold text-slate-900 block text-base">
                         {contactInfo.phone}
                       </span>
                     </div>
@@ -313,16 +324,16 @@ export const Contact: React.FC = () => {
 
                   {/* Email Item */}
                   <div className="flex gap-4 items-start">
-                    <div className="p-2.5 bg-white border border-hprh-pine/10 rounded-md shadow-sm text-hprh-sage flex-shrink-0">
+                    <div className="p-3 bg-sky-50 border border-sky-100 rounded-2xl text-sky-600 shrink-0">
                       <Mail className="w-5 h-5" />
                     </div>
                     <div className="space-y-0.5">
-                      <span className="font-mono text-[10px] uppercase tracking-wider text-hprh-pine/40 font-bold block">
-                        Email Support
+                      <span className="text-[10px] uppercase tracking-wider text-slate-400 font-bold block">
+                        Support Email
                       </span>
                       <a 
                         href={`mailto:${contactInfo.email}`} 
-                        className="font-semibold text-hprh-clay hover:underline block text-base break-all"
+                        className="font-bold text-indigo-600 hover:text-indigo-700 block text-base break-all transition-colors"
                       >
                         {contactInfo.email}
                       </a>
@@ -331,14 +342,14 @@ export const Contact: React.FC = () => {
 
                   {/* Address Item */}
                   <div className="flex gap-4 items-start">
-                    <div className="p-2.5 bg-white border border-hprh-pine/10 rounded-md shadow-sm text-hprh-sage flex-shrink-0">
+                    <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-2xl text-emerald-600 shrink-0">
                       <MapPin className="w-5 h-5" />
                     </div>
                     <div className="space-y-0.5">
-                      <span className="font-mono text-[10px] uppercase tracking-wider text-hprh-pine/40 font-bold block">
-                        Rescue Haven Location
+                      <span className="text-[10px] uppercase tracking-wider text-slate-400 font-bold block">
+                        Headquarters & Intake Center
                       </span>
-                      <span className="font-semibold text-hprh-pine block text-base leading-relaxed">
+                      <span className="font-semibold text-slate-900 block text-base leading-relaxed">
                         {contactInfo.address}
                       </span>
                     </div>
@@ -348,29 +359,30 @@ export const Contact: React.FC = () => {
             </div>
 
             {/* Operating Hours Card */}
-            <div className="bg-hprh-paper-dark border border-hprh-pine/15 rounded-lg p-6 sm:p-8 space-y-4 shadow-sm relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-1.5 h-full bg-hprh-clay"></div>
+            <div className="bg-slate-900 text-white border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-4 shadow-xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-48 h-48 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none" />
               
-              <div className="flex items-center gap-2 border-b border-hprh-pine/10 pb-3 text-hprh-pine">
-                <Clock className="w-5 h-5 text-hprh-clay" />
-                <h3 className="font-display text-base font-bold">
+              <div className="flex items-center gap-3 border-b border-slate-800 pb-3">
+                <div className="w-9 h-9 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center border border-indigo-500/30 shrink-0">
+                  <Clock className="w-5 h-5" />
+                </div>
+                <h3 className="font-display text-base font-bold text-white">
                   Volunteer Operations Hours
                 </h3>
               </div>
 
-              <div className="font-sans text-xs space-y-2 text-hprh-pine/70 leading-relaxed">
+              <div className="text-xs space-y-3 text-slate-400 leading-relaxed relative">
                 <p>
-                  Our shelter runs primarily on volunteer coordinators. Correspondence is monitored 
-                  periodically throughout the day:
+                  Rescue4paws is supported by licensed veterinarians and dedicated foster networks. Inquiries are reviewed during operating windows:
                 </p>
-                <div className="grid grid-cols-2 gap-y-1 font-mono text-[10px] pt-1">
-                  <span className="font-bold text-hprh-pine">Mon – Fri:</span>
-                  <span>9:00 AM – 5:00 PM EST</span>
-                  <span className="font-bold text-hprh-pine">Sat – Sun:</span>
-                  <span>10:00 AM – 2:00 PM EST</span>
+                <div className="grid grid-cols-2 gap-y-2 text-xs pt-1">
+                  <span className="font-semibold text-white">Monday – Friday:</span>
+                  <span className="font-mono text-slate-300">9:00 AM – 5:00 PM EST</span>
+                  <span className="font-semibold text-white">Saturday – Sunday:</span>
+                  <span className="font-mono text-slate-300">10:00 AM – 2:00 PM EST</span>
                 </div>
-                <p className="text-[10px] italic pt-1 border-t border-hprh-pine/5">
-                  Emergency notifications concerning active shipments or foster needs should be directed to coordinates on file.
+                <p className="text-[11px] text-slate-500 pt-2 border-t border-slate-800">
+                  Active transport tracking updates operate 24/7 via the real-time logistics portal.
                 </p>
               </div>
             </div>

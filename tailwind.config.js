@@ -8,19 +8,32 @@ export default {
     extend: {
       colors: {
         hprh: {
-          paper: '#FBF7EE',      // warm off-white background
-          pine: '#1F2A1E',       // deep pine/charcoal-green — primary text, near-black
-          clay: '#C75D3A',       // burnt terracotta — primary CTA color ONLY, use sparingly
-          sage: '#5C7A5E',       // secondary green — links, secondary buttons, accents
-          gold: '#E8B23D',       // warm gold — status dots/badges for "available" ONLY
-          'paper-dark': '#F0EADC', // slightly darker paper for card backgrounds/sections
+          paper: '#F8FAFC',      // cool crisp slate-50 background (replaces old yellow paper)
+          pine: '#0F172A',       // deep slate 900 — primary text, high contrast
+          clay: '#4F46E5',       // electric indigo — primary brand CTA & action
+          sage: '#0EA5E9',       // vibrant sky blue — secondary brand & links
+          gold: '#10B981',       // emerald green — modern "available" status badge
+          rose: '#F43F5E',       // vibrant rose — urgent / attention status
+          'paper-dark': '#FFFFFF', // pure clean white for cards and surface layers
+        },
+        brand: {
+          indigo: '#4F46E5',
+          violet: '#7C3AED',
+          sky: '#0EA5E9',
+          cyan: '#06B6D4',
+          emerald: '#10B981',
+          rose: '#F43F5E',
+          dark: '#0F172A',
+          slate: '#475569',
+          light: '#F8FAFC',
+          card: '#FFFFFF',
         }
       },
       fontFamily: {
-        display: ['Fraunces', 'serif'],
-        serif: ['Fraunces', 'serif'],
-        sans: ['"Public Sans"', 'sans-serif'],
-        body: ['"Public Sans"', 'sans-serif'],
+        display: ['Outfit', '"Plus Jakarta Sans"', 'sans-serif'],
+        serif: ['Outfit', '"Plus Jakarta Sans"', 'sans-serif'],
+        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+        body: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
         mono: ['"JetBrains Mono"', 'monospace'],
         utility: ['"JetBrains Mono"', 'monospace'],
       },

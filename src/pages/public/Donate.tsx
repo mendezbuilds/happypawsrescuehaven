@@ -229,19 +229,19 @@ export const Donate: React.FC = () => {
   const selectedBank = bankAccounts.find(b => b.id === selectedBankId);
 
   return (
-    <div className="py-16 bg-hprh-paper text-hprh-pine font-sans min-h-screen">
+    <div className="py-14 md:py-20 bg-slate-50 text-slate-900 font-sans min-h-screen">
       <Container className="max-w-5xl space-y-12">
         {/* Page Header */}
-        <div className="text-center max-w-2xl mx-auto space-y-4">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-hprh-sage/10 text-hprh-sage mb-1 shadow-sm border border-hprh-sage/15">
-            <Heart className="w-6 h-6 fill-current animate-pulse" />
+        <div className="text-center max-w-2xl mx-auto space-y-3">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-rose-50 border border-rose-100 text-xs font-semibold text-rose-700 shadow-xs select-none">
+            <Heart className="w-3.5 h-3.5 fill-rose-500 text-rose-500" />
+            <span>Rescue4paws Medical & Rescue Fund</span>
           </div>
-          <h1 className="text-3xl sm:text-5xl font-bold font-display text-hprh-pine">
+          <h1 className="text-4xl sm:text-5xl font-extrabold font-display tracking-tight text-slate-900 leading-tight">
             Support Our Haven
           </h1>
-          <p className="text-sm font-sans text-hprh-pine/70 leading-relaxed">
-            Every donation goes directly to veterinary bills, pet food, clean shelter supplies, 
-            and transport logistics to help rescue dogs and cats find their forever homes.
+          <p className="text-sm sm:text-base text-slate-600 leading-relaxed font-normal">
+            Every donation directly funds veterinary surgeries, vaccines, nutritious pet food, clean bedding, and safe transport logistics.
           </p>
         </div>
 
@@ -288,27 +288,22 @@ export const Donate: React.FC = () => {
             <div className="lg:col-span-7 space-y-8">
               
               {/* Fallback Cards Section */}
-              <div className="bg-hprh-paper-dark border border-hprh-pine/15 rounded-lg p-5 flex flex-col sm:flex-row justify-between items-center gap-4 shadow-sm relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-1 bg-hprh-gold h-full"></div>
+              <div className="bg-white border border-slate-200/90 rounded-2xl p-5 flex flex-col sm:flex-row justify-between items-center gap-4 shadow-xs relative overflow-hidden">
                 <div className="space-y-1 text-center sm:text-left">
-                  <span className="font-mono text-[9px] uppercase tracking-widest text-hprh-gold font-bold block">
-                    Third-Party Portals
+                  <span className="text-[10px] uppercase tracking-wider text-amber-600 font-bold block">
+                    Third-Party Campaigns
                   </span>
-                  <h4 className="font-display font-bold text-sm text-hprh-pine">
+                  <h4 className="font-display font-bold text-base text-slate-900">
                     Prefer giving via GoFundMe Campaign?
                   </h4>
-                  <p className="text-[11px] text-hprh-pine/60 leading-normal max-w-sm">
+                  <p className="text-xs text-slate-500 leading-normal max-w-sm">
                     You can contribute to our active public fundraiser directly.
                   </p>
                 </div>
                 
-                {/* 
-                  TODO: Replace with real client GoFundMe campaign URL when provided.
-                  Currently set to "#" as a placeholder link per requirements.
-                */}
                 <a 
                   href="#" 
-                  className="bg-hprh-gold text-hprh-pine hover:bg-hprh-gold/95 font-mono text-[10px] uppercase font-bold tracking-wider py-2.5 px-5 rounded transition-all inline-flex items-center gap-1.5 flex-shrink-0 shadow"
+                  className="bg-amber-500 hover:bg-amber-600 text-slate-900 text-xs font-bold py-2.5 px-5 rounded-full transition-all inline-flex items-center gap-1.5 flex-shrink-0 shadow-sm"
                 >
                   <span>Donate on GoFundMe</span>
                   <ExternalLink className="w-3.5 h-3.5" />
@@ -316,16 +311,16 @@ export const Donate: React.FC = () => {
               </div>
 
               {/* Main Form */}
-              <form onSubmit={handleFormSubmit} className="bg-white border border-hprh-pine/15 rounded-lg p-6 sm:p-8 space-y-6 shadow-sm">
-                <h3 className="font-display text-xl font-bold text-hprh-pine border-b border-hprh-pine/10 pb-3">
+              <form onSubmit={handleFormSubmit} className="bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-8 space-y-6 shadow-xs">
+                <h3 className="font-display text-xl font-bold text-slate-900 border-b border-slate-100 pb-3">
                   Direct Donation Details
                 </h3>
 
                 {error && (
-                  <div className="bg-hprh-clay/10 border border-hprh-clay/20 text-hprh-pine p-4 rounded text-xs flex items-start gap-3">
-                    <AlertCircle className="w-5 h-5 text-hprh-clay flex-shrink-0" />
+                  <div className="bg-rose-50 border border-rose-200 text-rose-800 p-4 rounded-xl text-xs flex items-start gap-3">
+                    <AlertCircle className="w-5 h-5 text-rose-600 flex-shrink-0" />
                     <div className="space-y-1">
-                      <span className="font-mono uppercase font-bold text-hprh-clay block">Submission Error</span>
+                      <span className="uppercase font-bold text-rose-700 block">Notice</span>
                       <p className="leading-relaxed">{error}</p>
                     </div>
                   </div>
@@ -333,7 +328,7 @@ export const Donate: React.FC = () => {
 
                 {/* Amount Select Grid */}
                 <div className="space-y-2">
-                  <label className="text-xs uppercase tracking-wider text-hprh-pine/70 font-bold select-none">
+                  <label className="text-xs font-semibold text-slate-700 select-none">
                     Select Donation Amount (USD) *
                   </label>
                   <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
@@ -347,10 +342,10 @@ export const Donate: React.FC = () => {
                             setSelectedPreset(amount);
                             setCustomAmount('');
                           }}
-                          className={`py-3.5 px-2 border rounded font-mono text-sm font-extrabold transition-all ${
+                          className={`py-3 px-2 border rounded-xl text-sm font-bold transition-all cursor-pointer ${
                             isSelected 
-                              ? 'bg-hprh-sage/10 border-hprh-sage text-hprh-sage font-black scale-105 shadow-sm'
-                              : 'border-hprh-pine/15 text-hprh-pine hover:border-hprh-pine/30 bg-hprh-paper-dark/30'
+                              ? 'bg-indigo-50 border-indigo-600 text-indigo-700 shadow-xs ring-1 ring-indigo-500/20'
+                              : 'border-slate-200 text-slate-700 hover:border-slate-300 bg-slate-50/50'
                           }`}
                         >
                           ${amount}
@@ -360,10 +355,10 @@ export const Donate: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setSelectedPreset('custom')}
-                      className={`py-3.5 px-2 border rounded font-mono text-xs uppercase tracking-wider font-extrabold transition-all col-span-2 sm:col-span-1 ${
+                      className={`py-3 px-2 border rounded-xl text-xs uppercase tracking-wider font-bold transition-all col-span-2 sm:col-span-1 cursor-pointer ${
                         selectedPreset === 'custom'
-                          ? 'bg-hprh-sage/10 border-hprh-sage text-hprh-sage font-black scale-105 shadow-sm'
-                          : 'border-hprh-pine/15 text-hprh-pine hover:border-hprh-pine/30 bg-hprh-paper-dark/30'
+                          ? 'bg-indigo-50 border-indigo-600 text-indigo-700 shadow-xs ring-1 ring-indigo-500/20'
+                          : 'border-slate-200 text-slate-700 hover:border-slate-300 bg-slate-50/50'
                       }`}
                     >
                       Custom

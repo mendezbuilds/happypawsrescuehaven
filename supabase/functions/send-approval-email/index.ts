@@ -39,7 +39,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+const CONTACT_NOTIFICATION_EMAIL = Deno.env.get("CONTACT_NOTIFICATION_EMAIL") ?? "support@happypawsrescuehaven.com";
 const SITE_URL = Deno.env.get("SITE_URL") ?? "http://localhost:5173";
+const TRANSPORT_SITE_URL = Deno.env.get("TRANSPORT_SITE_URL") ?? (
+  SITE_URL.includes("localhost")
+    ? "http://localhost:5174"
+    : "https://ship.happypawsrescuehaven.com"
+);
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -59,23 +65,92 @@ serve(async (req) => {
 
     const body = await req.json();
     const type = body.type ?? "application_approved"; // default for backward compatibility
-    const { adopterEmail, adopterName, petName, applicationId, adoptionId, transportRequestId, trackingId, donationAmount, assignmentId } = body;
+    const { adopterEmail, adopterName, petName, applicationId, adoptionId, transportRequestId, trackingId, donationAmount, assignmentId, submitterName, submitterEmail, message, subject: contactSubject, phone: contactPhone } = body;
 
     const fosterTypes = ["foster_assignment_notice", "foster_deposit_requested", "foster_payment_confirmed"];
 
-    // petName is NOT required for donation_confirmed (donations aren't pet-specific)
-    if (!adopterEmail || !adopterName || (type !== "donation_confirmed" && !petName)) {
-      return new Response(
-        JSON.stringify({ error: "Missing required fields: adopterEmail, adopterName, and petName (except for donation_confirmed)" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    // contact_form_submission uses different field names (submitterName/submitterEmail) — skip the adopter guard
+    if (type !== "contact_form_submission") {
+      // petName is NOT required for donation_confirmed (donations aren't pet-specific)
+      if (!adopterEmail || !adopterName || (type !== "donation_confirmed" && !petName)) {
+        return new Response(
+          JSON.stringify({ error: "Missing required fields: adopterEmail, adopterName, and petName (except for donation_confirmed)" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
     }
 
     let subject: string;
     let emailHtml: string;
     let fromAddress = "Happy Paws Rescue Haven <adoptions@happypawsrescuehaven.com>";
 
-    if (type === "foster_assignment_notice") {
+    if (type === "shipment_fee_approved") {
+      if (!transportRequestId) {
+        return new Response(
+          JSON.stringify({ error: "Missing required field for shipment_fee_approved: transportRequestId" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      fromAddress = "Happy Paws Rescue Haven Transport <transport@happypawsrescuehaven.com>";
+      subject = `One more step for your shipment: ${petName}`;
+      emailHtml = `
+        <div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 32px; background-color: #FBF7EE; color: #1F2A1E;">
+          <h1 style="font-size: 24px; margin-bottom: 8px;">Hello, ${adopterName}!</h1>
+          <p style="font-size: 16px; line-height: 1.6;">
+            We've received and confirmed your transport fee payment for <strong>${petName}</strong>.
+            The last step before we can schedule transport is a refundable security deposit of <strong>$${donationAmount}</strong>.
+          </p>
+          <a href="${TRANSPORT_SITE_URL}/ship?resume=${transportRequestId}" style="display: inline-block; background-color: #C75D3A; color: #FBF7EE; padding: 12px 24px; border-radius: 4px; text-decoration: none; font-weight: bold; margin-top: 16px;">
+            Submit Security Deposit
+          </a>
+          <p style="font-size: 14px; color: #5C7A5E; margin-top: 32px;">
+            This deposit is fully refundable and helps us ensure safe delivery. Once it's confirmed, your shipment will be dispatched and you'll receive your tracking updates.
+          </p>
+          <p style="font-size: 14px; color: #5C7A5E; margin-top: 24px;">
+            Warmly,<br/>
+            Happy Paws Rescue Haven Transport Team
+          </p>
+        </div>
+      `;
+    } else if (type === "shipment_finalized") {
+      if (!trackingId) {
+        return new Response(
+          JSON.stringify({ error: "Missing required field for shipment_finalized: trackingId" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      fromAddress = "Happy Paws Rescue Haven Transport <transport@happypawsrescuehaven.com>";
+      subject = `Your shipment has been dispatched! 🎉`;
+      emailHtml = `
+        <div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 32px; background-color: #FBF7EE; color: #1F2A1E;">
+          <h1 style="font-size: 24px; margin-bottom: 8px;">Wonderful news, ${adopterName}!</h1>
+          <p style="font-size: 16px; line-height: 1.6;">
+            Everything is confirmed for your shipment of <strong>${petName}</strong>. Your payment and security deposit proofs have been verified.
+          </p>
+          <div style="background-color: #F0EADC; border: 1px solid #5C7A5E; border-radius: 6px; padding: 20px; margin: 24px 0; text-align: center;">
+            <p style="font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #5C7A5E; margin: 0 0 8px;">
+              Your Tracking Number
+            </p>
+            <p style="font-size: 22px; font-family: 'Courier New', monospace; font-weight: bold; color: #C75D3A; margin: 0;">
+              ${trackingId}
+            </p>
+          </div>
+          <p style="font-size: 16px; line-height: 1.6;">
+            You can now track the live status and journey timeline of your shipment.
+          </p>
+          <a href="${TRANSPORT_SITE_URL}/track/${trackingId}" style="display: inline-block; background-color: #C75D3A; color: #FBF7EE; padding: 12px 24px; border-radius: 4px; text-decoration: none; font-weight: bold; margin-top: 16px;">
+            Track Shipment Live
+          </a>
+          <p style="font-size: 14px; color: #5C7A5E; margin-top: 32px;">
+            If you have any questions, just reply to this email. Thank you for shipping with us!
+          </p>
+          <p style="font-size: 14px; color: #5C7A5E; margin-top: 24px;">
+            Warmly,<br/>
+            Happy Paws Rescue Haven Transport Team
+          </p>
+        </div>
+      `;
+    } else if (type === "foster_assignment_notice") {
       if (!assignmentId) {
         return new Response(
           JSON.stringify({ error: "Missing required field for foster_assignment_notice: assignmentId" }),
@@ -310,6 +385,80 @@ serve(async (req) => {
           </p>
         </div>
       `;
+    } else if (type === "contact_form_submission") {
+      if (!submitterName || !submitterEmail || !message) {
+        return new Response(
+          JSON.stringify({ error: "Missing required fields for contact_form_submission: submitterName, submitterEmail, message" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      fromAddress = "Happy Paws Rescue Haven <noreply@happypawsrescuehaven.com>";
+      subject = `[Contact Form] ${contactSubject ?? "General Inquiry"} — from ${submitterName}`;
+      emailHtml = `
+        <div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 32px; background-color: #FBF7EE; color: #1F2A1E;">
+          <h1 style="font-size: 22px; margin-bottom: 4px;">New Contact Form Submission</h1>
+          <p style="font-size: 12px; color: #5C7A5E; margin-top: 0;">Received via happypawsrescuehaven.com</p>
+          <table style="width: 100%; border-collapse: collapse; margin-top: 24px; font-size: 14px;">
+            <tr>
+              <td style="padding: 8px 12px; background-color: #F0EADC; font-weight: bold; width: 30%; border: 1px solid #D5CDB8;">Name</td>
+              <td style="padding: 8px 12px; border: 1px solid #D5CDB8;">${submitterName}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 12px; background-color: #F0EADC; font-weight: bold; border: 1px solid #D5CDB8;">Email</td>
+              <td style="padding: 8px 12px; border: 1px solid #D5CDB8;"><a href="mailto:${submitterEmail}" style="color: #C75D3A;">${submitterEmail}</a></td>
+            </tr>
+            ${contactPhone ? `
+            <tr>
+              <td style="padding: 8px 12px; background-color: #F0EADC; font-weight: bold; border: 1px solid #D5CDB8;">Phone</td>
+              <td style="padding: 8px 12px; border: 1px solid #D5CDB8;">${contactPhone}</td>
+            </tr>` : ""}
+            <tr>
+              <td style="padding: 8px 12px; background-color: #F0EADC; font-weight: bold; border: 1px solid #D5CDB8;">Subject</td>
+              <td style="padding: 8px 12px; border: 1px solid #D5CDB8;">${contactSubject ?? "General Inquiry"}</td>
+            </tr>
+          </table>
+          <div style="margin-top: 24px; padding: 16px 20px; background-color: #fff; border: 1px solid #D5CDB8; border-radius: 4px;">
+            <p style="font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #5C7A5E; margin: 0 0 10px; font-weight: bold;">Message</p>
+            <p style="font-size: 15px; line-height: 1.7; margin: 0; white-space: pre-wrap;">${message}</p>
+          </div>
+          <p style="font-size: 12px; color: #5C7A5E; margin-top: 28px;">
+            Reply directly to this email to respond to ${submitterName}.
+          </p>
+        </div>
+      `;
+
+      // For contact form: send TO internal staff, reply-to the submitter
+      const resendContactResponse = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${RESEND_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: fromAddress,
+          to: [CONTACT_NOTIFICATION_EMAIL],
+          reply_to: submitterEmail,
+          subject,
+          html: emailHtml,
+        }),
+      });
+
+      const resendContactData = await resendContactResponse.json();
+
+      if (!resendContactResponse.ok) {
+        console.error("Resend API error (contact form):", resendContactData);
+        return new Response(
+          JSON.stringify({ error: "Failed to send contact notification email", details: resendContactData }),
+          { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, emailId: resendContactData.id }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+
     } else {
       // type === 'application_approved'
       if (!applicationId) {

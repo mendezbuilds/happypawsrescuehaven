@@ -60,8 +60,8 @@ export const AdminHeader: React.FC = () => {
         <div className="flex items-center justify-between py-3">
           {/* Logo / Staff Badge */}
           <div className="flex items-center gap-2">
-            <span className="font-display font-black text-sm sm:text-base tracking-wider text-hprh-pine">
-              HPRH Staff Portal
+            <span className="font-display font-extrabold text-sm sm:text-base tracking-tight text-hprh-pine">
+              Rescue<span className="text-hprh-clay">4paws</span> Staff Portal
             </span>
             <span className="font-mono text-[9px] uppercase tracking-widest text-hprh-clay font-bold bg-hprh-clay/10 border border-hprh-clay/20 px-2 py-0.5 rounded">
               RESTRICTED
