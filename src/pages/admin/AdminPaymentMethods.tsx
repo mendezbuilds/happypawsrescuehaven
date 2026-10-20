@@ -34,7 +34,7 @@ export const AdminPaymentMethods: React.FC = () => {
 
   // Public Contact Info Settings State
   const [contactPhone, setContactPhone] = useState('+1 (XXX) XXX-XXXX');
-  const [contactEmail, setContactEmail] = useState('support@happypawsrescuehaven.com');
+  const [contactEmail, setContactEmail] = useState('admin@rescue4paws.org');
   const [contactAddress, setContactAddress] = useState('Grand Rapids, MI 49503');
   const [updatingContactSettings, setUpdatingContactSettings] = useState(false);
 
@@ -878,7 +878,7 @@ export const AdminPaymentMethods: React.FC = () => {
                 type="email"
                 value={contactEmail}
                 onChange={(e) => setContactEmail(e.target.value)}
-                placeholder="e.g. support@happypawsrescuehaven.com"
+                placeholder="e.g. admin@rescue4paws.org"
                 required
               />
               <Input
@@ -923,28 +923,28 @@ export const AdminPaymentMethods: React.FC = () => {
                 type="text"
                 value={socialTiktok}
                 onChange={(e) => setSocialTiktok(e.target.value)}
-                placeholder="e.g. https://www.tiktok.com/@happypaws"
+                placeholder="e.g. https://www.tiktok.com/@rescue4paws"
               />
               <Input
                 label="Facebook URL"
                 type="text"
                 value={socialFacebook}
                 onChange={(e) => setSocialFacebook(e.target.value)}
-                placeholder="e.g. https://www.facebook.com/happypaws"
+                placeholder="e.g. https://www.facebook.com/rescue4paws"
               />
               <Input
                 label="Instagram URL"
                 type="text"
                 value={socialInstagram}
                 onChange={(e) => setSocialInstagram(e.target.value)}
-                placeholder="e.g. https://www.instagram.com/happypaws"
+                placeholder="e.g. https://www.instagram.com/rescue4paws"
               />
               <Input
                 label="X (Twitter) URL"
                 type="text"
                 value={socialX}
                 onChange={(e) => setSocialX(e.target.value)}
-                placeholder="e.g. https://x.com/happypaws"
+                placeholder="e.g. https://x.com/rescue4paws"
               />
             </div>
             
@@ -1137,7 +1137,7 @@ export const AdminPaymentMethods: React.FC = () => {
                     <Input
                       label={`${methodType.toUpperCase()} Handle / Username / Phone *`}
                       placeholder={
-                        methodType === 'zelle' ? 'finance@happypaws.org or phone' :
+                        methodType === 'zelle' ? 'donation@rescue4paws.org or phone' :
                         methodType === 'cashapp' ? '$cashtag' :
                         methodType === 'paypal' ? 'paypal.me link or email' : 'Account Identifier'
                       }

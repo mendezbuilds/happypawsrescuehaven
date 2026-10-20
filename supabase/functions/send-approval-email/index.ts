@@ -31,7 +31,7 @@
 //   "applicationId": "uuid-here",           // required for application_approved
 //   "adoptionId": "uuid-here",              // required for adoption_finalized
 //   "transportRequestId": "uuid-here",      // required for deposit_requested
-//   "trackingId": "HPRH-TRK-2026-0001",     // required for payment_confirmed and foster_payment_confirmed
+//   "trackingId": "TRK-2026-0001",          // required for payment_confirmed and foster_payment_confirmed
 //   "donationAmount": "50.00",              // required for donation_confirmed
 //   "assignmentId": "uuid-here"              // required for foster_assignment_notice and foster_deposit_requested
 // }
@@ -39,12 +39,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-const CONTACT_NOTIFICATION_EMAIL = Deno.env.get("CONTACT_NOTIFICATION_EMAIL") ?? "support@happypawsrescuehaven.com";
+const CONTACT_NOTIFICATION_EMAIL = Deno.env.get("CONTACT_NOTIFICATION_EMAIL") ?? "admin@rescue4paws.org";
 const SITE_URL = Deno.env.get("SITE_URL") ?? "http://localhost:5173";
 const TRANSPORT_SITE_URL = Deno.env.get("TRANSPORT_SITE_URL") ?? (
   SITE_URL.includes("localhost")
     ? "http://localhost:5174"
-    : "https://ship.happypawsrescuehaven.com"
+    : "https://ship.rescue4paws.org"
 );
 
 const corsHeaders = {
@@ -67,8 +67,6 @@ serve(async (req) => {
     const type = body.type ?? "application_approved"; // default for backward compatibility
     const { adopterEmail, adopterName, petName, applicationId, adoptionId, transportRequestId, trackingId, donationAmount, assignmentId, submitterName, submitterEmail, message, subject: contactSubject, phone: contactPhone } = body;
 
-    const fosterTypes = ["foster_assignment_notice", "foster_deposit_requested", "foster_payment_confirmed"];
-
     // contact_form_submission uses different field names (submitterName/submitterEmail) — skip the adopter guard
     if (type !== "contact_form_submission") {
       // petName is NOT required for donation_confirmed (donations aren't pet-specific)
@@ -82,7 +80,7 @@ serve(async (req) => {
 
     let subject: string;
     let emailHtml: string;
-    let fromAddress = "Happy Paws Rescue Haven <adoptions@happypawsrescuehaven.com>";
+    let fromAddress = "Rescue4paws <adoption@rescue4paws.org>";
 
     if (type === "shipment_fee_approved") {
       if (!transportRequestId) {
@@ -91,24 +89,24 @@ serve(async (req) => {
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      fromAddress = "Happy Paws Rescue Haven Transport <transport@happypawsrescuehaven.com>";
+      fromAddress = "Rescue4paws Transport <transport@rescue4paws.org>";
       subject = `One more step for your shipment: ${petName}`;
       emailHtml = `
-        <div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 32px; background-color: #FBF7EE; color: #1F2A1E;">
-          <h1 style="font-size: 24px; margin-bottom: 8px;">Hello, ${adopterName}!</h1>
-          <p style="font-size: 16px; line-height: 1.6;">
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px; background-color: #F8FAFC; color: #0F172A; border-radius: 12px; border: 1px solid #E2E8F0;">
+          <h1 style="font-size: 24px; font-weight: 800; margin-bottom: 8px; color: #0F172A;">Hello, ${adopterName}!</h1>
+          <p style="font-size: 15px; line-height: 1.6; color: #334155;">
             We've received and confirmed your transport fee payment for <strong>${petName}</strong>.
             The last step before we can schedule transport is a refundable security deposit of <strong>$${donationAmount}</strong>.
           </p>
-          <a href="${TRANSPORT_SITE_URL}/ship?resume=${transportRequestId}" style="display: inline-block; background-color: #C75D3A; color: #FBF7EE; padding: 12px 24px; border-radius: 4px; text-decoration: none; font-weight: bold; margin-top: 16px;">
+          <a href="${TRANSPORT_SITE_URL}/ship?resume=${transportRequestId}" style="display: inline-block; background-color: #4F46E5; color: #FFFFFF; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: bold; margin-top: 16px; font-size: 14px;">
             Submit Security Deposit
           </a>
-          <p style="font-size: 14px; color: #5C7A5E; margin-top: 32px;">
-            This deposit is fully refundable and helps us ensure safe delivery. Once it's confirmed, your shipment will be dispatched and you'll receive your tracking updates.
+          <p style="font-size: 13px; color: #64748B; margin-top: 32px; line-height: 1.5;">
+            This deposit is fully refundable and helps us ensure safe delivery. Once it's confirmed, your shipment will be dispatched and you'll receive real-time tracking updates.
           </p>
-          <p style="font-size: 14px; color: #5C7A5E; margin-top: 24px;">
+          <p style="font-size: 14px; color: #64748B; margin-top: 24px;">
             Warmly,<br/>
-            Happy Paws Rescue Haven Transport Team
+            <strong>Rescue4paws Transport Team</strong>
           </p>
         </div>
       `;
@@ -119,34 +117,34 @@ serve(async (req) => {
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      fromAddress = "Happy Paws Rescue Haven Transport <transport@happypawsrescuehaven.com>";
+      fromAddress = "Rescue4paws Transport <transport@rescue4paws.org>";
       subject = `Your shipment has been dispatched! 🎉`;
       emailHtml = `
-        <div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 32px; background-color: #FBF7EE; color: #1F2A1E;">
-          <h1 style="font-size: 24px; margin-bottom: 8px;">Wonderful news, ${adopterName}!</h1>
-          <p style="font-size: 16px; line-height: 1.6;">
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px; background-color: #F8FAFC; color: #0F172A; border-radius: 12px; border: 1px solid #E2E8F0;">
+          <h1 style="font-size: 24px; font-weight: 800; margin-bottom: 8px; color: #0F172A;">Wonderful news, ${adopterName}!</h1>
+          <p style="font-size: 15px; line-height: 1.6; color: #334155;">
             Everything is confirmed for your shipment of <strong>${petName}</strong>. Your payment and security deposit proofs have been verified.
           </p>
-          <div style="background-color: #F0EADC; border: 1px solid #5C7A5E; border-radius: 6px; padding: 20px; margin: 24px 0; text-align: center;">
-            <p style="font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #5C7A5E; margin: 0 0 8px;">
+          <div style="background-color: #EEF2FF; border: 1px solid #C7D2FE; border-radius: 8px; padding: 20px; margin: 24px 0; text-align: center;">
+            <p style="font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: #4F46E5; margin: 0 0 8px; font-weight: bold;">
               Your Tracking Number
             </p>
-            <p style="font-size: 22px; font-family: 'Courier New', monospace; font-weight: bold; color: #C75D3A; margin: 0;">
+            <p style="font-size: 22px; font-family: monospace; font-weight: bold; color: #4F46E5; margin: 0;">
               ${trackingId}
             </p>
           </div>
-          <p style="font-size: 16px; line-height: 1.6;">
+          <p style="font-size: 15px; line-height: 1.6; color: #334155;">
             You can now track the live status and journey timeline of your shipment.
           </p>
-          <a href="${TRANSPORT_SITE_URL}/track/${trackingId}" style="display: inline-block; background-color: #C75D3A; color: #FBF7EE; padding: 12px 24px; border-radius: 4px; text-decoration: none; font-weight: bold; margin-top: 16px;">
+          <a href="${TRANSPORT_SITE_URL}/track/${trackingId}" style="display: inline-block; background-color: #4F46E5; color: #FFFFFF; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: bold; margin-top: 16px; font-size: 14px;">
             Track Shipment Live
           </a>
-          <p style="font-size: 14px; color: #5C7A5E; margin-top: 32px;">
-            If you have any questions, just reply to this email. Thank you for shipping with us!
+          <p style="font-size: 13px; color: #64748B; margin-top: 32px;">
+            If you have any questions, just reply to this email. Thank you for choosing Rescue4paws!
           </p>
-          <p style="font-size: 14px; color: #5C7A5E; margin-top: 24px;">
+          <p style="font-size: 14px; color: #64748B; margin-top: 24px;">
             Warmly,<br/>
-            Happy Paws Rescue Haven Transport Team
+            <strong>Rescue4paws Transport Team</strong>
           </p>
         </div>
       `;
@@ -158,29 +156,27 @@ serve(async (req) => {
         );
       }
 
-      fromAddress = "Happy Paws Rescue Haven <volunteers@happypawsrescuehaven.com>";
+      fromAddress = "Rescue4paws Foster <foster@rescue4paws.org>";
       const fosterUrl = `${SITE_URL}/foster/location/${assignmentId}`;
       subject = `You've been matched with ${petName}! 🐾`;
       emailHtml = `
-        <div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 32px; background-color: #FBF7EE; color: #1F2A1E;">
-          <h1 style="font-size: 24px; margin-bottom: 8px;">Great news, ${adopterName}!</h1>
-          <p style="font-size: 16px; line-height: 1.6;">
-            You've been matched as a foster for <strong>${petName}</strong>! We're so grateful
-            for your support.
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px; background-color: #F8FAFC; color: #0F172A; border-radius: 12px; border: 1px solid #E2E8F0;">
+          <h1 style="font-size: 24px; font-weight: 800; margin-bottom: 8px; color: #0F172A;">Great news, ${adopterName}!</h1>
+          <p style="font-size: 15px; line-height: 1.6; color: #334155;">
+            You've been matched as a foster for <strong>${petName}</strong>! We're so grateful for your dedication to rescuing animals in need.
           </p>
-          <p style="font-size: 16px; line-height: 1.6;">
-            Next, let us know how you'd like to receive ${petName} — pick them up yourself, or
-            have us arrange free transport for you.
+          <p style="font-size: 15px; line-height: 1.6; color: #334155;">
+            Next, let us know how you'd like to receive ${petName} — pick them up yourself, or have us arrange transport for you.
           </p>
-          <a href="${fosterUrl}" style="display: inline-block; background-color: #C75D3A; color: #FBF7EE; padding: 12px 24px; border-radius: 4px; text-decoration: none; font-weight: bold; margin-top: 16px;">
+          <a href="${fosterUrl}" style="display: inline-block; background-color: #4F46E5; color: #FFFFFF; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: bold; margin-top: 16px; font-size: 14px;">
             Coordinate Pickup or Transport
           </a>
-          <p style="font-size: 14px; color: #5C7A5E; margin-top: 32px;">
-            If you have any questions, just reply to this email — we're happy to help.
+          <p style="font-size: 13px; color: #64748B; margin-top: 32px;">
+            If you have any questions, simply reply to this email — we're always happy to help.
           </p>
-          <p style="font-size: 14px; color: #5C7A5E; margin-top: 24px;">
+          <p style="font-size: 14px; color: #64748B; margin-top: 24px;">
             Warmly,<br/>
-            Happy Paws Rescue Haven
+            <strong>Rescue4paws Care Team</strong>
           </p>
         </div>
       `;
@@ -192,26 +188,25 @@ serve(async (req) => {
         );
       }
 
-      fromAddress = "Happy Paws Rescue Haven <volunteers@happypawsrescuehaven.com>";
+      fromAddress = "Rescue4paws Foster <foster@rescue4paws.org>";
       const fosterUrl = `${SITE_URL}/foster/location/${assignmentId}`;
       subject = `One more step before ${petName} comes home with you`;
       emailHtml = `
-        <div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 32px; background-color: #FBF7EE; color: #1F2A1E;">
-          <h1 style="font-size: 24px; margin-bottom: 8px;">Almost there, ${adopterName}!</h1>
-          <p style="font-size: 16px; line-height: 1.6;">
-            Since you're outside Michigan, the last step before we can arrange transport for
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px; background-color: #F8FAFC; color: #0F172A; border-radius: 12px; border: 1px solid #E2E8F0;">
+          <h1 style="font-size: 24px; font-weight: 800; margin-bottom: 8px; color: #0F172A;">Almost there, ${adopterName}!</h1>
+          <p style="font-size: 15px; line-height: 1.6; color: #334155;">
+            Since you're outside Michigan, the final step before we can arrange transport for
             <strong>${petName}</strong> is a fully refundable security deposit.
           </p>
-          <a href="${fosterUrl}" style="display: inline-block; background-color: #C75D3A; color: #FBF7EE; padding: 12px 24px; border-radius: 4px; text-decoration: none; font-weight: bold; margin-top: 16px;">
+          <a href="${fosterUrl}" style="display: inline-block; background-color: #4F46E5; color: #FFFFFF; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: bold; margin-top: 16px; font-size: 14px;">
             Submit Security Deposit
           </a>
-          <p style="font-size: 14px; color: #5C7A5E; margin-top: 32px;">
-            This deposit is 100% refundable and helps us ensure a smooth foster placement. Once
-            it's confirmed, you'll receive your tracking ID right away.
+          <p style="font-size: 13px; color: #64748B; margin-top: 32px; line-height: 1.5;">
+            This deposit is 100% refundable and helps us ensure a smooth foster placement. Once it's confirmed, you'll receive your tracking ID right away.
           </p>
-          <p style="font-size: 14px; color: #5C7A5E; margin-top: 24px;">
+          <p style="font-size: 14px; color: #64748B; margin-top: 24px;">
             Warmly,<br/>
-            Happy Paws Rescue Haven
+            <strong>Rescue4paws Care Team</strong>
           </p>
         </div>
       `;
@@ -223,33 +218,32 @@ serve(async (req) => {
         );
       }
 
-      fromAddress = "Happy Paws Rescue Haven <volunteers@happypawsrescuehaven.com>";
+      fromAddress = "Rescue4paws Foster <foster@rescue4paws.org>";
       subject = `${petName} is on the way to you! 🎉`;
       emailHtml = `
-        <div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 32px; background-color: #FBF7EE; color: #1F2A1E;">
-          <h1 style="font-size: 24px; margin-bottom: 8px;">Wonderful, ${adopterName}!</h1>
-          <p style="font-size: 16px; line-height: 1.6;">
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px; background-color: #F8FAFC; color: #0F172A; border-radius: 12px; border: 1px solid #E2E8F0;">
+          <h1 style="font-size: 24px; font-weight: 800; margin-bottom: 8px; color: #0F172A;">Wonderful, ${adopterName}!</h1>
+          <p style="font-size: 15px; line-height: 1.6; color: #334155;">
             Everything is confirmed for <strong>${petName}'s</strong> foster placement with you.
-            Thank you for opening your home!
+            Thank you for opening your home and heart!
           </p>
-          <div style="background-color: #F0EADC; border: 1px solid #5C7A5E; border-radius: 6px; padding: 20px; margin: 24px 0; text-align: center;">
-            <p style="font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #5C7A5E; margin: 0 0 8px;">
+          <div style="background-color: #EEF2FF; border: 1px solid #C7D2FE; border-radius: 8px; padding: 20px; margin: 24px 0; text-align: center;">
+            <p style="font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: #4F46E5; margin: 0 0 8px; font-weight: bold;">
               Your Transport Tracking ID
             </p>
-            <p style="font-size: 22px; font-family: 'Courier New', monospace; font-weight: bold; color: #C75D3A; margin: 0;">
+            <p style="font-size: 22px; font-family: monospace; font-weight: bold; color: #4F46E5; margin: 0;">
               ${trackingId}
             </p>
           </div>
-          <p style="font-size: 16px; line-height: 1.6;">
-            Use this ID to follow ${petName}'s journey to you. Our team will be in touch with
-            pickup/delivery details.
+          <p style="font-size: 15px; line-height: 1.6; color: #334155;">
+            Use this ID to follow ${petName}'s journey. Our team will be in touch with pickup and delivery details.
           </p>
-          <p style="font-size: 14px; color: #5C7A5E; margin-top: 32px;">
+          <p style="font-size: 13px; color: #64748B; margin-top: 32px;">
             If you have any questions, just reply to this email — we're happy to help.
           </p>
-          <p style="font-size: 14px; color: #5C7A5E; margin-top: 24px;">
+          <p style="font-size: 14px; color: #64748B; margin-top: 24px;">
             Warmly,<br/>
-            Happy Paws Rescue Haven
+            <strong>Rescue4paws Care Team</strong>
           </p>
         </div>
       `;
@@ -261,25 +255,23 @@ serve(async (req) => {
         );
       }
 
-      fromAddress = "Happy Paws Rescue Haven <donations@happypawsrescuehaven.com>";
+      fromAddress = "Rescue4paws <donation@rescue4paws.org>";
       subject = `Thank you for your generous donation! 🐾`;
       emailHtml = `
-        <div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 32px; background-color: #FBF7EE; color: #1F2A1E;">
-          <h1 style="font-size: 24px; margin-bottom: 8px;">Thank you, ${adopterName}!</h1>
-          <p style="font-size: 16px; line-height: 1.6;">
-            Your donation of <strong>$${donationAmount}</strong> has been confirmed. Gifts like
-            yours directly support the animals in our care — from medical treatment to foster
-            supplies to safe transport home.
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px; background-color: #F8FAFC; color: #0F172A; border-radius: 12px; border: 1px solid #E2E8F0;">
+          <h1 style="font-size: 24px; font-weight: 800; margin-bottom: 8px; color: #0F172A;">Thank you, ${adopterName}!</h1>
+          <p style="font-size: 15px; line-height: 1.6; color: #334155;">
+            Your donation of <strong>$${donationAmount}</strong> has been confirmed. Gifts like yours directly support vulnerable animals in our care — from emergency medical surgeries to foster supplies and safe transport.
           </p>
-          <p style="font-size: 16px; line-height: 1.6;">
-            On behalf of every paw we help, thank you for being part of this mission.
+          <p style="font-size: 15px; line-height: 1.6; color: #334155;">
+            On behalf of every companion we rescue and rehabilitate, thank you for being a vital part of this mission.
           </p>
-          <p style="font-size: 14px; color: #5C7A5E; margin-top: 32px;">
-            If you have any questions about your donation, just reply to this email.
+          <p style="font-size: 13px; color: #64748B; margin-top: 32px;">
+            If you have any questions about your tax-deductible donation, just reply to this email.
           </p>
-          <p style="font-size: 14px; color: #5C7A5E; margin-top: 24px;">
-            Warmly,<br/>
-            Happy Paws Rescue Haven
+          <p style="font-size: 14px; color: #64748B; margin-top: 24px;">
+            With deep gratitude,<br/>
+            <strong>Rescue4paws Foundation</strong>
           </p>
         </div>
       `;
@@ -291,33 +283,31 @@ serve(async (req) => {
         );
       }
 
-      fromAddress = "Happy Paws Rescue Haven Transport <transport@happypawsrescuehaven.com>";
+      fromAddress = "Rescue4paws Transport <transport@rescue4paws.org>";
       subject = `${petName}'s adoption is finalized! 🎉`;
       emailHtml = `
-        <div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 32px; background-color: #FBF7EE; color: #1F2A1E;">
-          <h1 style="font-size: 24px; margin-bottom: 8px;">Congratulations, ${adopterName}!</h1>
-          <p style="font-size: 16px; line-height: 1.6;">
-            Your payment has been confirmed and <strong>${petName}'s</strong> adoption is now
-            officially finalized. Welcome to the family!
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px; background-color: #F8FAFC; color: #0F172A; border-radius: 12px; border: 1px solid #E2E8F0;">
+          <h1 style="font-size: 24px; font-weight: 800; margin-bottom: 8px; color: #0F172A;">Congratulations, ${adopterName}!</h1>
+          <p style="font-size: 15px; line-height: 1.6; color: #334155;">
+            Your payment has been confirmed and <strong>${petName}'s</strong> adoption is now officially finalized. Welcome to the Rescue4paws family!
           </p>
-          <div style="background-color: #F0EADC; border: 1px solid #5C7A5E; border-radius: 6px; padding: 20px; margin: 24px 0; text-align: center;">
-            <p style="font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #5C7A5E; margin: 0 0 8px;">
+          <div style="background-color: #EEF2FF; border: 1px solid #C7D2FE; border-radius: 8px; padding: 20px; margin: 24px 0; text-align: center;">
+            <p style="font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: #4F46E5; margin: 0 0 8px; font-weight: bold;">
               Your Transport Tracking ID
             </p>
-            <p style="font-size: 22px; font-family: 'Courier New', monospace; font-weight: bold; color: #C75D3A; margin: 0;">
+            <p style="font-size: 22px; font-family: monospace; font-weight: bold; color: #4F46E5; margin: 0;">
               ${trackingId}
             </p>
           </div>
-          <p style="font-size: 16px; line-height: 1.6;">
-            Use this ID to follow ${petName}'s transport progress. Our team will be in touch
-            soon with pickup and transport details.
+          <p style="font-size: 15px; line-height: 1.6; color: #334155;">
+            Use this ID to follow ${petName}'s transport progress. Our coordination team will be in touch soon with pickup and transport details.
           </p>
-          <p style="font-size: 14px; color: #5C7A5E; margin-top: 32px;">
+          <p style="font-size: 13px; color: #64748B; margin-top: 32px;">
             If you have any questions, just reply to this email — we're happy to help.
           </p>
-          <p style="font-size: 14px; color: #5C7A5E; margin-top: 24px;">
+          <p style="font-size: 14px; color: #64748B; margin-top: 24px;">
             Warmly,<br/>
-            Happy Paws Rescue Haven
+            <strong>Rescue4paws Team</strong>
           </p>
         </div>
       `;
@@ -329,26 +319,24 @@ serve(async (req) => {
         );
       }
 
-      fromAddress = "Happy Paws Rescue Haven Transport <transport@happypawsrescuehaven.com>";
+      fromAddress = "Rescue4paws Transport <transport@rescue4paws.org>";
       const transportUrl = `${SITE_URL}/transport/request/${transportRequestId}`;
       subject = `One more step for ${petName}'s journey home`;
       emailHtml = `
-        <div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 32px; background-color: #FBF7EE; color: #1F2A1E;">
-          <h1 style="font-size: 24px; margin-bottom: 8px;">Great progress, ${adopterName}!</h1>
-          <p style="font-size: 16px; line-height: 1.6;">
-            We've received and confirmed your transport fee payment for <strong>${petName}</strong>.
-            The last step before we can schedule transport is a refundable security deposit.
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px; background-color: #F8FAFC; color: #0F172A; border-radius: 12px; border: 1px solid #E2E8F0;">
+          <h1 style="font-size: 24px; font-weight: 800; margin-bottom: 8px; color: #0F172A;">Great progress, ${adopterName}!</h1>
+          <p style="font-size: 15px; line-height: 1.6; color: #334155;">
+            We've received and confirmed your transport fee payment for <strong>${petName}</strong>. The last step before we can schedule transport is a refundable security deposit.
           </p>
-          <a href="${transportUrl}" style="display: inline-block; background-color: #C75D3A; color: #FBF7EE; padding: 12px 24px; border-radius: 4px; text-decoration: none; font-weight: bold; margin-top: 16px;">
+          <a href="${transportUrl}" style="display: inline-block; background-color: #4F46E5; color: #FFFFFF; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: bold; margin-top: 16px; font-size: 14px;">
             Submit Security Deposit
           </a>
-          <p style="font-size: 14px; color: #5C7A5E; margin-top: 32px;">
-            This deposit is fully refundable and helps us ensure a smooth handoff. Once it's
-            confirmed, you'll receive your tracking ID right away.
+          <p style="font-size: 13px; color: #64748B; margin-top: 32px; line-height: 1.5;">
+            This deposit is fully refundable and helps us ensure a smooth handoff. Once it's confirmed, you'll receive your tracking ID right away.
           </p>
-          <p style="font-size: 14px; color: #5C7A5E; margin-top: 24px;">
+          <p style="font-size: 14px; color: #64748B; margin-top: 24px;">
             Warmly,<br/>
-            Happy Paws Rescue Haven
+            <strong>Rescue4paws Team</strong>
           </p>
         </div>
       `;
@@ -363,25 +351,23 @@ serve(async (req) => {
       const transportChoiceUrl = `${SITE_URL}/transport/request/${adoptionId}`;
       subject = `${petName}'s adoption fee is confirmed — next step inside`;
       emailHtml = `
-        <div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 32px; background-color: #FBF7EE; color: #1F2A1E;">
-          <h1 style="font-size: 24px; margin-bottom: 8px;">Wonderful news, ${adopterName}!</h1>
-          <p style="font-size: 16px; line-height: 1.6;">
-            We've confirmed your adoption fee payment for <strong>${petName}</strong>. The adoption
-            itself is finalized — now let's get ${petName} home.
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px; background-color: #F8FAFC; color: #0F172A; border-radius: 12px; border: 1px solid #E2E8F0;">
+          <h1 style="font-size: 24px; font-weight: 800; margin-bottom: 8px; color: #0F172A;">Wonderful news, ${adopterName}!</h1>
+          <p style="font-size: 15px; line-height: 1.6; color: #334155;">
+            We've confirmed your adoption fee payment for <strong>${petName}</strong>. The adoption itself is finalized — now let's get ${petName} safely home.
           </p>
-          <p style="font-size: 16px; line-height: 1.6;">
-            Let us know how you'd like to proceed: pick ${petName} up yourself, or have us
-            arrange transport for you.
+          <p style="font-size: 15px; line-height: 1.6; color: #334155;">
+            Let us know how you'd like to proceed: pick ${petName} up yourself, or have us arrange transport for you.
           </p>
-          <a href="${transportChoiceUrl}" style="display: inline-block; background-color: #C75D3A; color: #FBF7EE; padding: 12px 24px; border-radius: 4px; text-decoration: none; font-weight: bold; margin-top: 16px;">
+          <a href="${transportChoiceUrl}" style="display: inline-block; background-color: #4F46E5; color: #FFFFFF; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: bold; margin-top: 16px; font-size: 14px;">
             Choose Pickup or Transport
           </a>
-          <p style="font-size: 14px; color: #5C7A5E; margin-top: 32px;">
+          <p style="font-size: 13px; color: #64748B; margin-top: 32px;">
             If you have any questions, just reply to this email — we're happy to help.
           </p>
-          <p style="font-size: 14px; color: #5C7A5E; margin-top: 24px;">
+          <p style="font-size: 14px; color: #64748B; margin-top: 24px;">
             Warmly,<br/>
-            Happy Paws Rescue Haven
+            <strong>Rescue4paws Team</strong>
           </p>
         </div>
       `;
@@ -393,36 +379,36 @@ serve(async (req) => {
         );
       }
 
-      fromAddress = "Happy Paws Rescue Haven <noreply@happypawsrescuehaven.com>";
+      fromAddress = "Rescue4paws Admin <admin@rescue4paws.org>";
       subject = `[Contact Form] ${contactSubject ?? "General Inquiry"} — from ${submitterName}`;
       emailHtml = `
-        <div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 32px; background-color: #FBF7EE; color: #1F2A1E;">
-          <h1 style="font-size: 22px; margin-bottom: 4px;">New Contact Form Submission</h1>
-          <p style="font-size: 12px; color: #5C7A5E; margin-top: 0;">Received via happypawsrescuehaven.com</p>
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px; background-color: #F8FAFC; color: #0F172A; border-radius: 12px; border: 1px solid #E2E8F0;">
+          <h1 style="font-size: 22px; font-weight: 800; margin-bottom: 4px; color: #0F172A;">New Contact Form Submission</h1>
+          <p style="font-size: 12px; color: #64748B; margin-top: 0;">Received via rescue4paws.org</p>
           <table style="width: 100%; border-collapse: collapse; margin-top: 24px; font-size: 14px;">
             <tr>
-              <td style="padding: 8px 12px; background-color: #F0EADC; font-weight: bold; width: 30%; border: 1px solid #D5CDB8;">Name</td>
-              <td style="padding: 8px 12px; border: 1px solid #D5CDB8;">${submitterName}</td>
+              <td style="padding: 10px 14px; background-color: #EEF2FF; font-weight: bold; width: 30%; border: 1px solid #E2E8F0; color: #3730A3;">Name</td>
+              <td style="padding: 10px 14px; border: 1px solid #E2E8F0; color: #1E293B;">${submitterName}</td>
             </tr>
             <tr>
-              <td style="padding: 8px 12px; background-color: #F0EADC; font-weight: bold; border: 1px solid #D5CDB8;">Email</td>
-              <td style="padding: 8px 12px; border: 1px solid #D5CDB8;"><a href="mailto:${submitterEmail}" style="color: #C75D3A;">${submitterEmail}</a></td>
+              <td style="padding: 10px 14px; background-color: #EEF2FF; font-weight: bold; border: 1px solid #E2E8F0; color: #3730A3;">Email</td>
+              <td style="padding: 10px 14px; border: 1px solid #E2E8F0;"><a href="mailto:${submitterEmail}" style="color: #4F46E5; font-weight: 600;">${submitterEmail}</a></td>
             </tr>
             ${contactPhone ? `
             <tr>
-              <td style="padding: 8px 12px; background-color: #F0EADC; font-weight: bold; border: 1px solid #D5CDB8;">Phone</td>
-              <td style="padding: 8px 12px; border: 1px solid #D5CDB8;">${contactPhone}</td>
+              <td style="padding: 10px 14px; background-color: #EEF2FF; font-weight: bold; border: 1px solid #E2E8F0; color: #3730A3;">Phone</td>
+              <td style="padding: 10px 14px; border: 1px solid #E2E8F0; color: #1E293B;">${contactPhone}</td>
             </tr>` : ""}
             <tr>
-              <td style="padding: 8px 12px; background-color: #F0EADC; font-weight: bold; border: 1px solid #D5CDB8;">Subject</td>
-              <td style="padding: 8px 12px; border: 1px solid #D5CDB8;">${contactSubject ?? "General Inquiry"}</td>
+              <td style="padding: 10px 14px; background-color: #EEF2FF; font-weight: bold; border: 1px solid #E2E8F0; color: #3730A3;">Subject</td>
+              <td style="padding: 10px 14px; border: 1px solid #E2E8F0; color: #1E293B;">${contactSubject ?? "General Inquiry"}</td>
             </tr>
           </table>
-          <div style="margin-top: 24px; padding: 16px 20px; background-color: #fff; border: 1px solid #D5CDB8; border-radius: 4px;">
-            <p style="font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #5C7A5E; margin: 0 0 10px; font-weight: bold;">Message</p>
-            <p style="font-size: 15px; line-height: 1.7; margin: 0; white-space: pre-wrap;">${message}</p>
+          <div style="margin-top: 24px; padding: 18px 20px; background-color: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 8px;">
+            <p style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #64748B; margin: 0 0 10px; font-weight: bold;">Message</p>
+            <p style="font-size: 14px; line-height: 1.7; margin: 0; white-space: pre-wrap; color: #334155;">${message}</p>
           </div>
-          <p style="font-size: 12px; color: #5C7A5E; margin-top: 28px;">
+          <p style="font-size: 12px; color: #64748B; margin-top: 28px;">
             Reply directly to this email to respond to ${submitterName}.
           </p>
         </div>
@@ -471,24 +457,24 @@ serve(async (req) => {
       const checkoutUrl = `${SITE_URL}/checkout/${applicationId}`;
       subject = `Your application for ${petName} has been approved!`;
       emailHtml = `
-        <div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 32px; background-color: #FBF7EE; color: #1F2A1E;">
-          <h1 style="font-size: 24px; margin-bottom: 8px;">Great news, ${adopterName}!</h1>
-          <p style="font-size: 16px; line-height: 1.6;">
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px; background-color: #F8FAFC; color: #0F172A; border-radius: 12px; border: 1px solid #E2E8F0;">
+          <h1 style="font-size: 24px; font-weight: 800; margin-bottom: 8px; color: #0F172A;">Great news, ${adopterName}!</h1>
+          <p style="font-size: 15px; line-height: 1.6; color: #334155;">
             Your application to adopt <strong>${petName}</strong> has been approved by our team.
-            We're so excited to help you welcome ${petName} into your home.
+            We're so excited to help you welcome ${petName} into your home and family.
           </p>
-          <p style="font-size: 16px; line-height: 1.6;">
-            The next step is to complete the adoption fee payment to finalize the process.
+          <p style="font-size: 15px; line-height: 1.6; color: #334155;">
+            The next step is to complete the adoption fee payment to finalize the placement process.
           </p>
-          <a href="${checkoutUrl}" style="display: inline-block; background-color: #C75D3A; color: #FBF7EE; padding: 12px 24px; border-radius: 4px; text-decoration: none; font-weight: bold; margin-top: 16px;">
+          <a href="${checkoutUrl}" style="display: inline-block; background-color: #4F46E5; color: #FFFFFF; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: bold; margin-top: 16px; font-size: 14px;">
             Complete Adoption Payment
           </a>
-          <p style="font-size: 14px; color: #5C7A5E; margin-top: 32px;">
+          <p style="font-size: 13px; color: #64748B; margin-top: 32px;">
             If you have any questions, just reply to this email — we're happy to help.
           </p>
-          <p style="font-size: 14px; color: #5C7A5E; margin-top: 24px;">
+          <p style="font-size: 14px; color: #64748B; margin-top: 24px;">
             Warmly,<br/>
-            Happy Paws Rescue Haven
+            <strong>Rescue4paws Team</strong>
           </p>
         </div>
       `;

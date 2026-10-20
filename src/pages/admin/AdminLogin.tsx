@@ -133,7 +133,7 @@ export const AdminLogin: React.FC = () => {
             <Input
               label="Staff Email"
               type="email"
-              placeholder="e.g. administrator@happypaws.org"
+              placeholder="e.g. admin@rescue4paws.org"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={submitting}

@@ -24,7 +24,7 @@ async function geocodeNominatim(address: string) {
     console.log(`Querying Nominatim for: ${address}`);
     const response = await fetch(url, {
       headers: {
-        "User-Agent": "HappyPawsRescueHavenTransport/1.0 (contact@happypawsrescuehaven.com)"
+        "User-Agent": "Rescue4pawsTransport/1.0 (transport@rescue4paws.org)"
       }
     });
     if (!response.ok) return null;
