@@ -172,43 +172,22 @@ export const AdoptApply: React.FC = () => {
         throw new Error('Failed to upload ID document. Please try again.');
       }
 
-      // Step 1: Check existing adopter by email or insert
-      const { data: existingAdopter } = await supabase
-        .from('adopters')
-        .select('id')
-        .eq('email', validated.email)
-        .maybeSingle();
+      // Step 1: Upsert adopter by email. Done via a SECURITY DEFINER RPC because
+      // anonymous visitors have no RLS access to the adopters table.
+      const { data: confirmedAdopterId, error: adopterError } = await supabase.rpc(
+        'upsert_adopter_for_application',
+        {
+          p_full_name: validated.fullName,
+          p_email: validated.email,
+          p_phone: validated.phone,
+          p_address: validated.address,
+          p_id_document_url: storagePath,
+        }
+      );
 
-      let confirmedAdopterId = existingAdopter?.id;
-
-      if (!confirmedAdopterId) {
-        const { data: newAdopter, error: insertAdopterError } = await supabase
-          .from('adopters')
-          .insert([
-            {
-              full_name: validated.fullName,
-              email: validated.email,
-              phone: validated.phone,
-              address: validated.address,
-              id_document_url: storagePath,
-            }
-          ])
-          .select('id')
-          .single();
-
-        if (insertAdopterError) throw insertAdopterError;
-        confirmedAdopterId = newAdopter.id;
-      } else {
-        // Update existing adopter ID record
-        await supabase
-          .from('adopters')
-          .update({
-            full_name: validated.fullName,
-            phone: validated.phone,
-            address: validated.address,
-            id_document_url: storagePath,
-          })
-          .eq('id', confirmedAdopterId);
+      if (adopterError || !confirmedAdopterId) {
+        await supabase.storage.from('adopter-ids').remove([storagePath]);
+        throw adopterError ?? new Error('Failed to save adopter details.');
       }
 
       // Step 2: Insert into adoption_applications

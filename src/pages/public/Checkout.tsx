@@ -111,14 +111,15 @@ export const Checkout: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      // 1. Fetch application, pet, and adopter joined details
-      const { data: appData, error: appError } = await supabase
-        .from('adoption_applications')
-        .select('id, pet_id, adopter_id, status, pets:pet_id(*), adopters:adopter_id(*)')
-        .eq('id', applicationId)
-        .maybeSingle();
+      // 1. Fetch application, pet, adopter, adoption, proofs and bank accounts in
+      // one RPC (anonymous visitors have no direct RLS access to these tables)
+      const { data: checkoutData, error: appError } = await supabase.rpc('get_checkout_data', {
+        p_application_id: applicationId,
+      });
 
       if (appError) throw appError;
+
+      const appData = checkoutData?.application;
 
       if (!appData) {
         setError('Application dossier not found. Please review your checkout link or contact support.');
@@ -142,13 +143,7 @@ export const Checkout: React.FC = () => {
       }
 
       // 2. Query adoptions to see if it's already finalized/paid
-      const { data: adoptionData, error: adoptError } = await supabase
-        .from('adoptions')
-        .select('*')
-        .eq('application_id', applicationId)
-        .maybeSingle();
-
-      if (adoptError) throw adoptError;
+      const adoptionData = checkoutData.adoption;
 
       if (adoptionData) {
         setExistingAdoption(adoptionData);
@@ -158,12 +153,7 @@ export const Checkout: React.FC = () => {
       }
 
       // 3. Query existing payment proofs
-      const { data: proofs, error: proofError } = await supabase
-        .from('payment_proofs')
-        .select('*')
-        .eq('application_id', applicationId);
-
-      if (proofError) throw proofError;
+      const proofs = checkoutData.proofs as any[];
 
       if (proofs && proofs.length > 0) {
         // Sort to check if there is an APPROVED or PENDING_REVIEW proof
@@ -175,16 +165,6 @@ export const Checkout: React.FC = () => {
           setExistingProof(approvedProof);
           setPaymentStatus('APPROVED');
           
-          // Also fetch the adoption ID if not already set
-          const { data: adoptRec } = await supabase
-            .from('adoptions')
-            .select('*')
-            .eq('application_id', applicationId)
-            .maybeSingle();
-          if (adoptRec) {
-            setExistingAdoption(adoptRec);
-          }
-
           setLoading(false);
           return;
         } else if (pendingProof) {
@@ -201,17 +181,8 @@ export const Checkout: React.FC = () => {
         }
       }
 
-      // 4. Fetch all active bank accounts matching currency
-      const currency = typedAppData.pets?.currency || 'USD';
-      const { data: bankData, error: bankError } = await supabase
-        .from('bank_accounts')
-        .select('*')
-        .eq('is_active', true)
-        .eq('currency', currency);
-
-      if (bankError) throw bankError;
-
-      const activeBanks = (bankData || []) as ActiveBankAccount[];
+      // 4. Active bank accounts matching the pet's currency (returned by the RPC)
+      const activeBanks = (checkoutData.bank_accounts || []) as ActiveBankAccount[];
       setBankAccounts(activeBanks);
       
       if (activeBanks.length > 0) {
@@ -304,18 +275,13 @@ export const Checkout: React.FC = () => {
       if (uploadError) throw uploadError;
 
       // 2. Insert record in payment_proofs
-      const { error: dbError } = await supabase
-        .from('payment_proofs')
-        .insert([{
-          application_id: application.id,
-          pet_id: application.pet_id,
-          adopter_id: application.adopter_id,
-          bank_account_id: selectedBankId,
-          proof_image_url: storagePath,
-          amount_claimed: parseFloat(amountClaimed) || application.pets?.adoption_fee || 0,
-          reference_note: referenceNote || null,
-          status: 'PENDING_REVIEW'
-        }]);
+      const { error: dbError } = await supabase.rpc('submit_payment_proof', {
+        p_application_id: application.id,
+        p_bank_account_id: selectedBankId,
+        p_proof_image_url: storagePath,
+        p_amount_claimed: parseFloat(amountClaimed) || application.pets?.adoption_fee || 0,
+        p_reference_note: referenceNote || null,
+      });
 
       if (dbError) throw dbError;
 
