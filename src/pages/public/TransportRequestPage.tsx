@@ -84,27 +84,15 @@ export const TransportRequestPage: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      let activeAdoptionId = adoptionId;
-
-      // Check if the parameter is actually a transport request ID
-      const { data: checkTransport } = await supabase
-        .from('transport_requests')
-        .select('adoption_id')
-        .eq('id', adoptionId)
-        .maybeSingle();
-
-      if (checkTransport) {
-        activeAdoptionId = checkTransport.adoption_id;
-      }
-
-      // 1. Fetch adoption record
-      const { data: adoptData, error: adoptErr } = await supabase
-        .from('adoptions')
-        .select('*, pets:pet_id(*), adopters:adopter_id(*)')
-        .eq('id', activeAdoptionId)
-        .maybeSingle();
+      // One RPC returns the adoption, transport request, deposit and payment
+      // methods (anonymous visitors have no direct RLS access to these tables).
+      // The id may be an adoption id or a transport request id.
+      const { data: pageData, error: adoptErr } = await supabase.rpc('get_transport_request_data', {
+        p_id: adoptionId,
+      });
 
       if (adoptErr) throw adoptErr;
+      const adoptData = pageData?.adoption;
       if (!adoptData) {
         setError('Adoption record not found.');
         setLoading(false);
@@ -123,39 +111,11 @@ export const TransportRequestPage: React.FC = () => {
         return;
       }
 
-      // 2. Fetch existing transport request
-      const { data: transportData, error: transportErr } = await supabase
-        .from('transport_requests')
-        .select('*')
-        .eq('adoption_id', activeAdoptionId)
-        .maybeSingle();
-
-      if (transportErr) throw transportErr;
-      
-      const typedTransport = transportData as TransportRequest | null;
+      const typedTransport = (pageData.transport_request ?? null) as TransportRequest | null;
       setTransportRequest(typedTransport);
+      setSecurityDeposit((pageData.security_deposit ?? null) as SecurityDeposit | null);
 
-      // 3. Fetch security deposit if transport request exists
-      if (typedTransport) {
-        const { data: depositData, error: depositErr } = await supabase
-          .from('security_deposits')
-          .select('*')
-          .eq('transport_request_id', typedTransport.id)
-          .maybeSingle();
-
-        if (depositErr) throw depositErr;
-        setSecurityDeposit(depositData as SecurityDeposit | null);
-      }
-
-      // 4. Fetch active payment methods
-      const { data: methodsData, error: methodsErr } = await supabase
-        .from('bank_accounts')
-        .select('*')
-        .eq('is_active', true);
-
-      if (methodsErr) throw methodsErr;
-      
-      const activeMethods = (methodsData || []) as BankAccount[];
+      const activeMethods = (pageData.payment_methods || []) as BankAccount[];
       setPaymentMethods(activeMethods);
       if (activeMethods.length > 0) {
         setSelectedMethodId(activeMethods[0].id);
@@ -211,14 +171,11 @@ export const TransportRequestPage: React.FC = () => {
       setDistance(dist);
 
       // 3. Fetch tiers and match rate
-      const { data: tiersData, error: tiersErr } = await supabase
-        .from('transport_fee_tiers')
-        .select('*')
-        .eq('is_active', true);
+      const { data: tiersData, error: tiersErr } = await supabase.rpc('get_active_transport_fee_tiers');
 
       if (tiersErr) throw tiersErr;
 
-      const matchingTier = tiersData?.find((tier: any) => {
+      const matchingTier = (tiersData as any[] | null)?.find((tier: any) => {
         const min = tier.min_distance_miles;
         const max = tier.max_distance_miles;
         return dist >= min && (max === null || dist <= max);
@@ -251,26 +208,10 @@ export const TransportRequestPage: React.FC = () => {
       setSubmitting(true);
       setError(null);
 
-      const targetStatus = method === 'self_pickup' ? 'SELF_PICKUP_CONFIRMED' : 'AWAITING_LOCATION';
-
-      const upsertPayload: any = {
-        adoption_id: adoption.id,
-        pet_id: pet.id,
-        adopter_id: adopter.id,
-        pickup_method: method,
-        status: targetStatus
-      };
-
-      // Preserve existing id if we have one loaded
-      if (transportRequest?.id) {
-        upsertPayload.id = transportRequest.id;
-      }
-
-      const { data, error: upsertErr } = await supabase
-        .from('transport_requests')
-        .upsert([upsertPayload], { onConflict: 'adoption_id' })
-        .select()
-        .single();
+      const { data, error: upsertErr } = await supabase.rpc('select_transport_pickup_method', {
+        p_adoption_id: adoption.id,
+        p_method: method,
+      });
 
       if (upsertErr) throw upsertErr;
       setTransportRequest(data as TransportRequest);
@@ -291,31 +232,15 @@ export const TransportRequestPage: React.FC = () => {
       setSubmitting(true);
       setError(null);
 
-      const upsertPayload: any = {
-        adoption_id: adoption.id,
-        pet_id: pet.id,
-        adopter_id: adopter.id,
-        status: 'QUOTE_GENERATED',
-        destination_address: geocodeState.formatted,
-        destination_latitude: geocodeState.lat,
-        destination_longitude: geocodeState.lng,
-        distance_miles: distance,
-        fee_tier_id: calculatedQuote.tierId,
-        transport_fee_amount: calculatedQuote.fee,
-        transport_fee_currency: calculatedQuote.currency,
-        pickup_method: 'transport'
-      };
-
-      // Preserve existing id if we have one loaded
-      if (transportRequest?.id) {
-        upsertPayload.id = transportRequest.id;
-      }
-
-      const { data, error: upsertErr } = await supabase
-        .from('transport_requests')
-        .upsert([upsertPayload], { onConflict: 'adoption_id' })
-        .select()
-        .single();
+      // The fee is looked up from the tier server-side.
+      const { data, error: upsertErr } = await supabase.rpc('confirm_transport_quote', {
+        p_adoption_id: adoption.id,
+        p_destination_address: geocodeState.formatted,
+        p_latitude: geocodeState.lat,
+        p_longitude: geocodeState.lng,
+        p_distance_miles: distance,
+        p_fee_tier_id: calculatedQuote.tierId,
+      });
 
       if (upsertErr) throw upsertErr;
       
@@ -391,63 +316,17 @@ export const TransportRequestPage: React.FC = () => {
 
       if (uploadError) throw uploadError;
 
-      // 2. Insert payment proof
-      const proofPayload: any = {
-        application_id: adoption?.application_id,
-        pet_id: pet?.id,
-        adopter_id: adopter?.id,
-        bank_account_id: selectedMethodId,
-        proof_image_url: storagePath,
-        amount_claimed: parseFloat(amountClaimed) || 0,
-        reference_note: referenceNote || null,
-        status: 'PENDING_REVIEW',
-        purpose: purpose,
-        transport_request_id: transportRequest.id
-      };
-
-      if (purpose === 'SECURITY_DEPOSIT' && securityDeposit) {
-        proofPayload.security_deposit_id = securityDeposit.id;
-      }
-
-      const { data: proofData, error: dbError } = await supabase
-        .from('payment_proofs')
-        .insert([proofPayload])
-        .select()
-        .single();
+      // 2. Record the proof and advance the request status in one RPC
+      const { error: dbError } = await supabase.rpc('submit_transport_payment_proof', {
+        p_transport_request_id: transportRequest.id,
+        p_purpose: purpose,
+        p_bank_account_id: selectedMethodId,
+        p_proof_image_url: storagePath,
+        p_amount_claimed: parseFloat(amountClaimed) || 0,
+        p_reference_note: referenceNote || null,
+      });
 
       if (dbError) throw dbError;
-
-      // 3. Update transport request status / links
-      if (purpose === 'TRANSPORT_FEE') {
-        const { error: updateRequestErr } = await supabase
-          .from('transport_requests')
-          .update({
-            status: 'TRANSPORT_FEE_PENDING',
-            transport_fee_proof_id: proofData.id
-          })
-          .eq('id', transportRequest.id);
-
-        if (updateRequestErr) throw updateRequestErr;
-      } else {
-        // SECURITY_DEPOSIT
-        const { error: updateRequestErr } = await supabase
-          .from('transport_requests')
-          .update({
-            status: 'DEPOSIT_PROOF_SUBMITTED'
-          })
-          .eq('id', transportRequest.id);
-
-        if (updateRequestErr) throw updateRequestErr;
-
-        const { error: updateDepositErr } = await supabase
-          .from('security_deposits')
-          .update({
-            proof_id: proofData.id
-          })
-          .eq('id', securityDeposit?.id);
-
-        if (updateDepositErr) throw updateDepositErr;
-      }
 
       setSelectedFile(null);
       setReferenceNote('');

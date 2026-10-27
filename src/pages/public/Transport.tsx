@@ -25,32 +25,20 @@ export const Transport: React.FC = () => {
       setError(null);
       setShipment(null);
 
-      // Query transport_requests joining pets
-      const { data, error: dbError } = await supabase
-        .from('transport_requests')
-        .select('*, pets(*)')
-        .eq('tracking_id', cleanId)
-        .maybeSingle();
+      // The RPC returns the shipment (with pet) and its updates, and only for
+      // TRACKING_ACTIVE / DELIVERED shipments; anything else is a generic not-found.
+      const { data, error: dbError } = await supabase.rpc('get_shipment_tracking', {
+        p_tracking_id: cleanId,
+      });
       if (dbError) throw dbError;
 
-      // Keep it secure: if no match found or status is not at or after TRACKING_ACTIVE, show generic not-found
-      const activeStatuses = ['TRACKING_ACTIVE', 'DELIVERED'];
-      if (!data || !activeStatuses.includes(data.status)) {
+      if (!data?.shipment) {
         setError("We couldn't find an active shipment with that tracking ID. Please verify the ID from your confirmation email and try again.");
         return;
       }
 
-      // Query shipment_status_updates
-      const { data: updatesData, error: updatesError } = await supabase
-        .from('shipment_status_updates')
-        .select('*')
-        .eq('transport_request_id', data.id)
-        .order('created_at', { ascending: false });
-
-      if (updatesError) throw updatesError;
-
-      setUpdates(updatesData || []);
-      setShipment(data);
+      setUpdates(data.updates || []);
+      setShipment(data.shipment);
     } catch (err: any) {
       console.error('Error fetching tracking info:', err);
       setError("We couldn't find an active shipment with that tracking ID. Please verify the ID from your confirmation email and try again.");
