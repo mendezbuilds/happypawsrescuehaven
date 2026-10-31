@@ -24,10 +24,13 @@ async function geocodeNominatim(address: string) {
     console.log(`Querying Nominatim for: ${address}`);
     const response = await fetch(url, {
       headers: {
-        "User-Agent": "Rescue4pawsTransport/1.0 (transport@rescue4paws.org)"
+        "User-Agent": "Rescue4pawsTransport/1.0 (transport@rescue4pawz.site)"
       }
     });
-    if (!response.ok) return null;
+    if (!response.ok) {
+      console.error(`Nominatim responded ${response.status} for: ${address}`);
+      return null;
+    }
     const data = await response.json();
     if (!data || data.length === 0) return null;
 
@@ -40,6 +43,39 @@ async function geocodeNominatim(address: string) {
     };
   } catch (err) {
     console.error("Nominatim geocoding error:", err);
+    return null;
+  }
+}
+
+// Photon (komoot) Geocoding Function - keyless, OSM-based. Used as a fallback because
+// Nominatim rejects requests coming from shared cloud IPs (e.g. Supabase edge functions).
+async function geocodePhoton(address: string) {
+  try {
+    const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(address)}&limit=1`;
+    console.log(`Querying Photon for: ${address}`);
+    const response = await fetch(url);
+    if (!response.ok) {
+      console.error(`Photon responded ${response.status} for: ${address}`);
+      return null;
+    }
+    const data = await response.json();
+    const feature = data?.features?.[0];
+    if (!feature) return null;
+
+    const [lng, lat] = feature.geometry.coordinates;
+    const props = feature.properties || {};
+    const formattedAddress = [props.name, props.street, props.city, props.state, props.country]
+      .filter(Boolean)
+      .join(", ");
+
+    return {
+      latitude: lat,
+      longitude: lng,
+      formattedAddress: formattedAddress || address,
+      state: null,
+    };
+  } catch (err) {
+    console.error("Photon geocoding error:", err);
     return null;
   }
 }
@@ -104,17 +140,17 @@ serve(async (req) => {
     if (isInternational) {
       // 1. Try Nominatim first for international
       result = await geocodeNominatim(address);
-      // Fallback to Geocodio if Nominatim failed
+      if (!result) result = await geocodePhoton(address);
+      // Fallback to Geocodio if the OSM-based lookups failed
       if (!result) {
         result = await geocodeGeocodio(address);
       }
     } else {
       // 2. Try Geocodio first for US/Canada
       result = await geocodeGeocodio(address);
-      // Fallback to Nominatim if Geocodio failed
-      if (!result) {
-        result = await geocodeNominatim(address);
-      }
+      // Fallback to Nominatim, then Photon, if Geocodio failed
+      if (!result) result = await geocodeNominatim(address);
+      if (!result) result = await geocodePhoton(address);
     }
 
     if (!result) {

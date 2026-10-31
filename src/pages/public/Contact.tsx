@@ -53,7 +53,7 @@ export const Contact: React.FC = () => {
 
         const info = {
           phone: '+1 (555) 737-2834',
-          email: 'admin@rescue4paws.org',
+          email: 'admin@rescue4pawz.site',
           address: 'Grand Rapids, MI 49503'
         };
 
@@ -70,7 +70,7 @@ export const Contact: React.FC = () => {
         // Fallback defaults in case of network/db issues
         setContactInfo({
           phone: '+1 (555) 737-2834',
-          email: 'admin@rescue4paws.org',
+          email: 'admin@rescue4pawz.site',
           address: 'Grand Rapids, MI 49503'
         });
       } finally {

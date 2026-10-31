@@ -39,12 +39,17 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-const CONTACT_NOTIFICATION_EMAIL = Deno.env.get("CONTACT_NOTIFICATION_EMAIL") ?? "admin@rescue4paws.org";
-const SITE_URL = Deno.env.get("SITE_URL") ?? "http://localhost:5173";
+const CONTACT_NOTIFICATION_EMAIL = Deno.env.get("CONTACT_NOTIFICATION_EMAIL") ?? "admin@rescue4pawz.site";
+const EMAIL_DOMAIN = Deno.env.get("EMAIL_DOMAIN") ?? "rescue4pawz.site";
+const SITE_URL = Deno.env.get("SITE_URL") ?? (
+  Deno.env.get("ENVIRONMENT") === "development"
+    ? "http://localhost:5173"
+    : "https://rescue4pawz.site"
+);
 const TRANSPORT_SITE_URL = Deno.env.get("TRANSPORT_SITE_URL") ?? (
   SITE_URL.includes("localhost")
     ? "http://localhost:5174"
-    : "https://ship.rescue4paws.org"
+    : "https://ship.rescue4pawz.site"
 );
 
 const corsHeaders = {
@@ -80,7 +85,7 @@ serve(async (req) => {
 
     let subject: string;
     let emailHtml: string;
-    let fromAddress = "Rescue4paws <adoption@rescue4paws.org>";
+    let fromAddress = `Rescue4paws <adoption@${EMAIL_DOMAIN}>`;
 
     if (type === "shipment_fee_approved") {
       if (!transportRequestId) {
@@ -89,7 +94,7 @@ serve(async (req) => {
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      fromAddress = "Rescue4paws Transport <transport@rescue4paws.org>";
+      fromAddress = `Rescue4paws Transport <transport@${EMAIL_DOMAIN}>`;
       subject = `One more step for your shipment: ${petName}`;
       emailHtml = `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px; background-color: #F8FAFC; color: #0F172A; border-radius: 12px; border: 1px solid #E2E8F0;">
@@ -117,7 +122,7 @@ serve(async (req) => {
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      fromAddress = "Rescue4paws Transport <transport@rescue4paws.org>";
+      fromAddress = `Rescue4paws Transport <transport@${EMAIL_DOMAIN}>`;
       subject = `Your shipment has been dispatched! 🎉`;
       emailHtml = `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px; background-color: #F8FAFC; color: #0F172A; border-radius: 12px; border: 1px solid #E2E8F0;">
@@ -156,7 +161,7 @@ serve(async (req) => {
         );
       }
 
-      fromAddress = "Rescue4paws Foster <foster@rescue4paws.org>";
+      fromAddress = `Rescue4paws Foster <foster@${EMAIL_DOMAIN}>`;
       const fosterUrl = `${SITE_URL}/foster/location/${assignmentId}`;
       subject = `You've been matched with ${petName}! 🐾`;
       emailHtml = `
@@ -188,7 +193,7 @@ serve(async (req) => {
         );
       }
 
-      fromAddress = "Rescue4paws Foster <foster@rescue4paws.org>";
+      fromAddress = `Rescue4paws Foster <foster@${EMAIL_DOMAIN}>`;
       const fosterUrl = `${SITE_URL}/foster/location/${assignmentId}`;
       subject = `One more step before ${petName} comes home with you`;
       emailHtml = `
@@ -218,7 +223,7 @@ serve(async (req) => {
         );
       }
 
-      fromAddress = "Rescue4paws Foster <foster@rescue4paws.org>";
+      fromAddress = `Rescue4paws Foster <foster@${EMAIL_DOMAIN}>`;
       subject = `${petName} is on the way to you! 🎉`;
       emailHtml = `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px; background-color: #F8FAFC; color: #0F172A; border-radius: 12px; border: 1px solid #E2E8F0;">
@@ -255,7 +260,7 @@ serve(async (req) => {
         );
       }
 
-      fromAddress = "Rescue4paws <donation@rescue4paws.org>";
+      fromAddress = `Rescue4paws <donation@${EMAIL_DOMAIN}>`;
       subject = `Thank you for your generous donation! 🐾`;
       emailHtml = `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px; background-color: #F8FAFC; color: #0F172A; border-radius: 12px; border: 1px solid #E2E8F0;">
@@ -283,7 +288,7 @@ serve(async (req) => {
         );
       }
 
-      fromAddress = "Rescue4paws Transport <transport@rescue4paws.org>";
+      fromAddress = `Rescue4paws Transport <transport@${EMAIL_DOMAIN}>`;
       subject = `${petName}'s adoption is finalized! 🎉`;
       emailHtml = `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px; background-color: #F8FAFC; color: #0F172A; border-radius: 12px; border: 1px solid #E2E8F0;">
@@ -319,7 +324,7 @@ serve(async (req) => {
         );
       }
 
-      fromAddress = "Rescue4paws Transport <transport@rescue4paws.org>";
+      fromAddress = `Rescue4paws Transport <transport@${EMAIL_DOMAIN}>`;
       const transportUrl = `${SITE_URL}/transport/request/${transportRequestId}`;
       subject = `One more step for ${petName}'s journey home`;
       emailHtml = `
@@ -379,12 +384,12 @@ serve(async (req) => {
         );
       }
 
-      fromAddress = "Rescue4paws Admin <admin@rescue4paws.org>";
+      fromAddress = `Rescue4paws Admin <admin@${EMAIL_DOMAIN}>`;
       subject = `[Contact Form] ${contactSubject ?? "General Inquiry"} — from ${submitterName}`;
       emailHtml = `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px; background-color: #F8FAFC; color: #0F172A; border-radius: 12px; border: 1px solid #E2E8F0;">
           <h1 style="font-size: 22px; font-weight: 800; margin-bottom: 4px; color: #0F172A;">New Contact Form Submission</h1>
-          <p style="font-size: 12px; color: #64748B; margin-top: 0;">Received via rescue4paws.org</p>
+          <p style="font-size: 12px; color: #64748B; margin-top: 0;">Received via ${EMAIL_DOMAIN}</p>
           <table style="width: 100%; border-collapse: collapse; margin-top: 24px; font-size: 14px;">
             <tr>
               <td style="padding: 10px 14px; background-color: #EEF2FF; font-weight: bold; width: 30%; border: 1px solid #E2E8F0; color: #3730A3;">Name</td>
