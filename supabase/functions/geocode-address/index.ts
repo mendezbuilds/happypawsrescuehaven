@@ -1,175 +1,148 @@
-// supabase/functions/geocode-address/index.ts
-//
-// Geocodes an address string using the Geocodio API (US/Canada)
-// with a global fallback to OpenStreetMap's Nominatim API for international routes.
-//
-// Expects a POST body like:
-// {
-//   "address": "Lagos, Nigeria"
-// }
-
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-
-const GEOCODIO_API_KEY = Deno.env.get("GEOCODIO_API_KEY");
+const MAPBOX_ACCESS_TOKEN = Deno.env.get("MAPBOX_ACCESS_TOKEN");
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-// Global Nominatim Geocoding Function (OSM)
-async function geocodeNominatim(address: string) {
-  try {
-    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1`;
-    console.log(`Querying Nominatim for: ${address}`);
-    const response = await fetch(url, {
-      headers: {
-        "User-Agent": "Rescue4pawsTransport/1.0 (transport@rescue4pawz.site)"
-      }
-    });
-    if (!response.ok) {
-      console.error(`Nominatim responded ${response.status} for: ${address}`);
-      return null;
-    }
-    const data = await response.json();
-    if (!data || data.length === 0) return null;
-
-    const first = data[0];
-    return {
-      latitude: parseFloat(first.lat),
-      longitude: parseFloat(first.lon),
-      formattedAddress: first.display_name,
-      state: null,
-    };
-  } catch (err) {
-    console.error("Nominatim geocoding error:", err);
-    return null;
-  }
-}
-
-// Photon (komoot) Geocoding Function - keyless, OSM-based. Used as a fallback because
-// Nominatim rejects requests coming from shared cloud IPs (e.g. Supabase edge functions).
-async function geocodePhoton(address: string) {
-  try {
-    const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(address)}&limit=1`;
-    console.log(`Querying Photon for: ${address}`);
-    const response = await fetch(url);
-    if (!response.ok) {
-      console.error(`Photon responded ${response.status} for: ${address}`);
-      return null;
-    }
-    const data = await response.json();
-    const feature = data?.features?.[0];
-    if (!feature) return null;
-
-    const [lng, lat] = feature.geometry.coordinates;
-    const props = feature.properties || {};
-    const formattedAddress = [props.name, props.street, props.city, props.state, props.country]
-      .filter(Boolean)
-      .join(", ");
-
-    return {
-      latitude: lat,
-      longitude: lng,
-      formattedAddress: formattedAddress || address,
-      state: null,
-    };
-  } catch (err) {
-    console.error("Photon geocoding error:", err);
-    return null;
-  }
-}
-
-// Geocodio Geocoding Function (US/Canada only)
-async function geocodeGeocodio(address: string) {
-  try {
-    if (!GEOCODIO_API_KEY) return null;
-    const geocodioUrl = `https://api.geocod.io/v1.7/geocode?q=${encodeURIComponent(address)}&api_key=${GEOCODIO_API_KEY}`;
-    console.log(`Querying Geocodio for: ${address}`);
-    const response = await fetch(geocodioUrl);
-    if (!response.ok) return null;
-    const data = await response.json();
-    if (!data.results || data.results.length === 0) return null;
-
-    const firstResult = data.results[0];
-    const { lat, lng } = firstResult.location;
-    const formattedAddress = firstResult.formatted_address;
-    const stateCode = firstResult.address_components?.state || null;
-
-    return {
-      latitude: lat,
-      longitude: lng,
-      formattedAddress,
-      state: stateCode,
-    };
-  } catch (err) {
-    console.error("Geocodio geocoding error:", err);
-    return null;
-  }
-}
-
-serve(async (req) => {
-  // Handle CORS preflight
+Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
-  try {
-    if (req.method !== "POST") {
-      return new Response(
-        JSON.stringify({ error: "Method not allowed. Use POST." }),
-        { status: 405, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const { address } = await req.json();
-
-    if (!address || typeof address !== 'string' || !address.trim()) {
-      return new Response(
-        JSON.stringify({ error: "Missing required field: address" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Determine if the query looks international (contains non-US indicators or does not look like US format)
-    const isInternational = /nigeria|lagos|london|uk|united kingdom|germany|france|europe|africa|asia|australia|india/i.test(address) ||
-                            (!/usa|united states|us|canada|ca/i.test(address) && !/\b[A-Z]{2}\b\s+\d{5}/.test(address));
-
-    let result = null;
-
-    if (isInternational) {
-      // 1. Try Nominatim first for international
-      result = await geocodeNominatim(address);
-      if (!result) result = await geocodePhoton(address);
-      // Fallback to Geocodio if the OSM-based lookups failed
-      if (!result) {
-        result = await geocodeGeocodio(address);
+  if (req.method !== "POST") {
+    return new Response(
+      JSON.stringify({ error: "Method not allowed. Use POST." }),
+      {
+        status: 405,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       }
-    } else {
-      // 2. Try Geocodio first for US/Canada
-      result = await geocodeGeocodio(address);
-      // Fallback to Nominatim, then Photon, if Geocodio failed
-      if (!result) result = await geocodeNominatim(address);
-      if (!result) result = await geocodePhoton(address);
-    }
+    );
+  }
 
-    if (!result) {
+  try {
+    if (!MAPBOX_ACCESS_TOKEN) {
+      console.error("MAPBOX_ACCESS_TOKEN secret is missing.");
+
       return new Response(
-        JSON.stringify({ error: `Address could not be geocoded: '${address}'. Please check spelling or enter a more specific address.` }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "Geocoding service is not configured." }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
       );
     }
 
-    return new Response(
-      JSON.stringify(result),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    const body = await req.json();
+    const address = body?.address;
 
-  } catch (err) {
-    console.error("geocode-address function error:", err);
+    if (
+      typeof address !== "string" ||
+      !address.trim() ||
+      address.trim().length > 256 ||
+      address.includes(";")
+    ) {
+      return new Response(
+        JSON.stringify({
+          error: "Please provide a valid address of up to 256 characters.",
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    const buildUrl = (permanent: boolean) => {
+      const query = new URLSearchParams({
+        q: address.trim(),
+        access_token: MAPBOX_ACCESS_TOKEN,
+        limit: "1",
+        autocomplete: "false",
+      });
+      if (permanent) {
+        query.set("permanent", "true");
+      }
+      return `https://api.mapbox.com/search/geocode/v6/forward?${query.toString()}`;
+    };
+
+    let response = await fetch(buildUrl(true));
+
+    // If permanent geocoding is not enabled or rate-limited on the Mapbox account,
+    // seamlessly fall back to standard billable forward geocoding.
+    if (!response.ok && (response.status === 429 || response.status === 403)) {
+      response = await fetch(buildUrl(false));
+    }
+
+    if (!response.ok) {
+      console.error("Mapbox geocoding failed. Status:", response.status);
+
+      return new Response(
+        JSON.stringify({
+          error: "Address verification service failed. Please try again.",
+        }),
+        {
+          status: 502,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    const data = await response.json();
+    const feature = data?.features?.[0];
+
+    if (!feature?.geometry?.coordinates) {
+      return new Response(
+        JSON.stringify({
+          error: `Address could not be found: '${address}'. Please enter a more specific address.`,
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    const [longitude, latitude] = feature.geometry.coordinates;
+    const properties = feature.properties || {};
+    const context = properties.context || {};
+
+    const formattedAddress =
+      properties.full_address ||
+      [
+        properties.name,
+        properties.place_formatted,
+      ].filter(Boolean).join(", ") ||
+      address.trim();
+
+    const state =
+      context.region?.region_code ||
+      context.region?.name ||
+      null;
+
+    const result = {
+      latitude,
+      longitude,
+      formattedAddress,
+      state,
+    };
+
+    return new Response(JSON.stringify(result), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+
+  } catch (error) {
+    console.error("Geocoding function error:", error);
+
     return new Response(
-      JSON.stringify({ error: err instanceof Error ? err.message : "Unknown error occurred during geocoding." }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({ error: "An unexpected geocoding error occurred." }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      }
     );
   }
 });
